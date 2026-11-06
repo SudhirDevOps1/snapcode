@@ -118,6 +118,13 @@
 .editor-count {
   color: #6f6580;
 }
+/* Segmented toggles: text tones chosen for >= 4.5:1 on their light backgrounds (checked with axe). */
+.segmented button {
+  color: #6b6080;
+}
+.segmented button.selected {
+  color: #6a3fc0;
+}
 .export-intro p,
 .resolution-options strong span,
 .resolution-options small {

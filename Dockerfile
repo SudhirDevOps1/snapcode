@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------- build stage ----------
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # ---------- runtime stage (non-root, static) ----------
-FROM nginxinc/nginx-unprivileged:1.28-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html

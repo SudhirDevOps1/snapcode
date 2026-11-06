@@ -127,10 +127,13 @@ test("photo background is processed on-device, exports, and reports no CSP viola
 
 test("new code and export panels meet automated WCAG AA checks", async ({ page }) => {
   await page.getByRole("tab", { name: "Code", exact: true }).click();
+  await page.waitForTimeout(400);
   const codeTab = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(codeTab.violations).toEqual([]);
 
   await page.getByRole("tab", { name: "Export", exact: true }).click();
+  // Let the 180 ms colour transition finish so axe measures settled colours, not an intermediate frame.
+  await page.waitForTimeout(400);
   const exportTab = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(exportTab.violations).toEqual([]);
 });
