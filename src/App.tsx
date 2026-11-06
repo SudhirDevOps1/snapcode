@@ -30,8 +30,12 @@ import {
   X,
 } from "lucide-react";
 import Brand from "./components/Brand";
-import CodePreview, { type LineClickModifiers } from "./components/CodePreview";
+import CodePreview, { type CompareWindow, type LineClickModifiers } from "./components/CodePreview";
 import ControlPanel, { type PanelTab } from "./components/ControlPanel";
+import { loadAuthor, prepareAvatar, saveAuthor, type AuthorProfile } from "./lib/author";
+import { CUSTOM_THEME_ID, forkTheme, loadCustomTheme, saveCustomTheme, sanitizeCustomTheme } from "./lib/custom-theme";
+import { renderTypingGif } from "./lib/gif";
+import { createArrowOverlay, createTextOverlay, MAX_OVERLAYS, type Overlay } from "./lib/overlays";
 import StudioDialog, { type DialogName } from "./components/StudioDialog";
 import {
   BACKGROUNDS,
@@ -43,13 +47,13 @@ import {
   SAMPLES,
   SHADOWS,
   THEMES,
+  type EditorTheme,
   type StylePreset,
 } from "./lib/data";
 import { detectLanguage } from "./lib/highlight";
 import { addRangeToSpec, formatCodeSnippet, parseLineSpec, removeLineFromSpec, toggleLineInSpec } from "./lib/lines";
-import { cloneWithExportRange, downloadBlob, imageFilename, renderImage } from "./lib/export";
+import { downloadBlob, imageFilename, renderImage } from "./lib/export";
 import { readCodeFile } from "./lib/files";
-import { prepareLogo } from "./lib/logo";
 import { preparePhoto, type BackgroundPhoto } from "./lib/photo";
 import { EMPTY_LINE_INPUTS, type LineAnnotations, type LineInputs } from "./lib/rows";
 import { DEFAULT_SETTINGS, loadSettings, sanitizeSettings, saveSettings, type Settings } from "./lib/settings";
@@ -90,6 +94,15 @@ export default function App() {
   const [fit, setFit] = useState({ width: 728, height: 520, scale: 1 });
   const [shareFile, setShareFile] = useState<File | null>(null);
   const [sharePreview, setSharePreview] = useState<string>();
+  /* ---- Pro state (v1.3) ---- */
+  const [overlays, setOverlays] = useState<Overlay[]>([]);
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  const [author, setAuthor] = useState<AuthorProfile>(() => loadAuthor());
+  const [compare, setCompare] = useState<CompareWindow>({ code: "", language: "auto", title: "after.ts" });
+  const [customTheme, setCustomTheme] = useState<EditorTheme>(() => loadCustomTheme());
+  const [visibleLines, setVisibleLines] = useState<number | null>(null);
+  const [gifProgress, setGifProgress] = useState<number | null>(null);
+  const dragRef = useRef<{ id: string; handle: "body" | "end" } | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLElement>(null);
@@ -113,32 +126,13 @@ export default function App() {
 
   const undoStack = useRef<Snapshot[]>([]);
   const redoStack = useRef<Snapshot[]>([]);
-  const lastHistoryKey = useRef<string | null>(null);
-  const lastHistoryTime = useRef(0);
   const [, setHistoryTick] = useState(0);
 
-  // History is coalesced within an 800 ms window for the same control (a slider drag counts as one undo).
-  const pushHistory = useCallback(
-    (key?: string) => {
-      const now = Date.now();
-      if (
-        key &&
-        key === lastHistoryKey.current &&
-        now - lastHistoryTime.current < 800 &&
-        undoStack.current.length > 0
-      ) {
-        redoStack.current = [];
-        setHistoryTick((n) => n + 1);
-        return;
-      }
-      lastHistoryKey.current = key ?? null;
-      lastHistoryTime.current = now;
-      undoStack.current = [...undoStack.current.slice(-29), { code, language, title, settings, lineInputs }];
-      redoStack.current = [];
-      setHistoryTick((n) => n + 1);
-    },
-    [code, language, title, settings, lineInputs],
-  );
+  const pushHistory = useCallback(() => {
+    undoStack.current = [...undoStack.current.slice(-29), { code, language, title, settings, lineInputs }];
+    redoStack.current = [];
+    setHistoryTick((n) => n + 1);
+  }, [code, language, title, settings, lineInputs]);
 
   const handleUndo = useCallback(() => {
     const prev = undoStack.current.pop();
@@ -168,7 +162,10 @@ export default function App() {
   const pwa = usePwa();
   const previewCode = useDeferredValue(code);
 
-  const theme = THEMES.find((item) => item.id === settings.themeId) ?? THEMES[0];
+  const theme =
+    settings.themeId === CUSTOM_THEME_ID
+      ? customTheme
+      : (THEMES.find((item) => item.id === settings.themeId) ?? THEMES[0]);
   const font = FONTS.find((item) => item.id === settings.fontId) ?? FONTS[0];
   const shadow = SHADOWS.find((item) => item.id === settings.shadowId)?.css ?? "none";
   const exportFormat = EXPORT_FORMATS.find((item) => item.id === settings.exportFormat) ?? EXPORT_FORMATS[0];
@@ -185,12 +182,137 @@ export default function App() {
       highlight: parseLineSpec(lineInputs.highlightSpec),
       added: parseLineSpec(lineInputs.addedSpec),
       removed: parseLineSpec(lineInputs.removedSpec),
+      blurred: parseLineSpec(lineInputs.blurSpec),
+      grayed: parseLineSpec(lineInputs.graySpec),
       dimUnfocused: lineInputs.dimUnfocused,
       focusOnly: lineInputs.focusOnly,
       focusContext: lineInputs.focusContext,
     }),
     [lineInputs],
   );
+
+  /* ---- Pro: persistence for author card and custom theme ---- */
+  // Debounced saves keep typing smooth; `pagehide` flushes immediately so a fast reload or tab close
+  // never loses the latest keystrokes (the debounce alone would drop them).
+  const authorRef = useRef(author);
+  const customThemeRef = useRef(customTheme);
+  const settingsRef = useRef(settings);
+  authorRef.current = author;
+  customThemeRef.current = customTheme;
+  settingsRef.current = settings;
+  useEffect(() => {
+    const timer = setTimeout(() => saveAuthor(author), 250);
+    return () => clearTimeout(timer);
+  }, [author]);
+  useEffect(() => {
+    const timer = setTimeout(() => saveCustomTheme(customTheme), 250);
+    return () => clearTimeout(timer);
+  }, [customTheme]);
+  useEffect(() => {
+    const flush = () => {
+      saveAuthor(authorRef.current);
+      saveCustomTheme(customThemeRef.current);
+      saveSettings(settingsRef.current);
+    };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+    };
+  }, []);
+
+  const patchAuthor = useCallback((next: Partial<AuthorProfile>) => {
+    setAuthor((current) => ({ ...current, ...next }));
+  }, []);
+  const patchCustomTheme = useCallback((next: Partial<EditorTheme>) => {
+    setCustomTheme((current) => sanitizeCustomTheme({ ...current, ...next }));
+  }, []);
+  const patchCompare = useCallback((next: Partial<CompareWindow>) => {
+    setCompare((current) => ({ ...current, ...next }));
+  }, []);
+
+  const addTextOverlay = useCallback(() => {
+    setOverlays((current) => {
+      if (current.length >= MAX_OVERLAYS) return current;
+      const o = createTextOverlay({ y: 10 + (current.length % 5) * 8 });
+      setSelectedOverlayId(o.id);
+      return [...current, o];
+    });
+  }, []);
+  const addArrowOverlay = useCallback(() => {
+    setOverlays((current) => {
+      if (current.length >= MAX_OVERLAYS) return current;
+      const o = createArrowOverlay({ y: 15 + (current.length % 5) * 8, y2: 40 + (current.length % 5) * 6 });
+      setSelectedOverlayId(o.id);
+      return [...current, o];
+    });
+  }, []);
+  const updateOverlay = useCallback((id: string, next: Partial<Overlay>) => {
+    setOverlays((current) => current.map((o) => (o.id === id ? ({ ...o, ...next } as Overlay) : o)));
+  }, []);
+  const removeOverlay = useCallback((id: string) => {
+    setOverlays((current) => current.filter((o) => o.id !== id));
+    setSelectedOverlayId((current) => (current === id ? null : current));
+  }, []);
+
+  // Drag annotations across the canvas. Positions are stored as percentages of the export canvas.
+  const handleOverlayPointerDown = useCallback((id: string, handle: "body" | "end", event: React.PointerEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current = { id, handle };
+    setSelectedOverlayId(id);
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+  }, []);
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      const node = exportRef.current;
+      if (!drag || !node) return;
+      const rect = node.getBoundingClientRect();
+      const x = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
+      const y = Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100));
+      setOverlays((current) =>
+        current.map((o) => {
+          if (o.id !== drag.id) return o;
+          if (o.kind === "arrow" && drag.handle === "end") return { ...o, x2: x, y2: y };
+          if (o.kind === "arrow") {
+            const dx = o.x2 - o.x;
+            const dy = o.y2 - o.y;
+            return { ...o, x, y, x2: Math.min(100, Math.max(0, x + dx)), y2: Math.min(100, Math.max(0, y + dy)) };
+          }
+          return { ...o, x, y };
+        }),
+      );
+    };
+    const onUp = () => {
+      dragRef.current = null;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  const pickAvatar = async (file: File) => {
+    try {
+      const url = await prepareAvatar(file);
+      setAuthor((current) => ({ ...current, avatarUrl: url, enabled: true }));
+      notify("Avatar added. Stored only in this browser.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "That avatar could not be used.", true);
+    }
+  };
+
+  const forkCurrentTheme = () => {
+    setCustomTheme(forkTheme(theme));
+    patch({ themeId: CUSTOM_THEME_ID });
+    notify(`Forked “${theme.name}” into My Theme. Tune any token below.`);
+  };
 
   // A photo background only exists in memory; after a reload the app falls back to the default gradient.
   const effectiveBgId = settings.bgId === "photo" && !photo ? DEFAULT_BG_ID : settings.bgId;
@@ -248,6 +370,14 @@ export default function App() {
         setTitle(shared.title);
         setLineInputs(shared.lineInputs);
         setSettings(shared.settings);
+        setOverlays(shared.overlays ?? []);
+        if (shared.compareCode) {
+          setCompare({
+            code: shared.compareCode,
+            title: shared.compareTitle || "after.ts",
+            language: shared.compareLanguage || "auto",
+          });
+        }
         notify("Shared snippet loaded. Changes stay on this device unless you share again.");
       })
       .catch((error: unknown) =>
@@ -257,14 +387,14 @@ export default function App() {
 
   const patch = useCallback(
     (next: Partial<Settings>) => {
-      pushHistory(`settings:${Object.keys(next).sort().join(",")}`);
+      pushHistory();
       setSettings((current) => sanitizeSettings({ ...current, ...next }));
     },
     [pushHistory],
   );
   const patchLineInputs = useCallback(
     (next: Partial<LineInputs>) => {
-      pushHistory(`lines:${Object.keys(next).sort().join(",")}`);
+      pushHistory();
       setLineInputs((current) => ({ ...current, ...next }));
     },
     [pushHistory],
@@ -368,7 +498,6 @@ export default function App() {
   };
 
   const formatCode = () => {
-    pushHistory();
     const formatted = formatCodeSnippet(code, settings.tabSize);
     if (formatted === code) {
       notify("Code indentation is already tidy.");
@@ -376,35 +505,6 @@ export default function App() {
     }
     setCode(formatted);
     notify("Tidied indentation and trailing spaces.");
-  };
-
-  const handleCopyCode = async () => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(code);
-      notify("Code copied to clipboard.");
-    } catch {
-      notify("Could not copy code in this browser.", true);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const pickBrandMark = async (file: File) => {
-    try {
-      const dataUrl = await prepareLogo(file);
-      patch({ showBrandMark: true, brandMarkDataUrl: dataUrl });
-      notify("Logo added. It stays on this device.");
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "That logo could not be used.", true);
-    }
-  };
-
-  const removeBrandMark = () => {
-    patch({ showBrandMark: false, brandMarkDataUrl: "" });
-    notify("Logo removed.");
   };
 
   const loadFile = async (file: File) => {
@@ -542,7 +642,17 @@ export default function App() {
 
   const copyShareLink = async () => {
     try {
-      const token = await encodeShare({ code, title, language, lineInputs, settings });
+      const token = await encodeShare({
+        code,
+        title,
+        language,
+        lineInputs,
+        settings,
+        overlays,
+        compareCode: settings.compareMode ? compare.code : "",
+        compareTitle: compare.title,
+        compareLanguage: compare.language,
+      });
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
       await navigator.clipboard.writeText(buildShareUrl(token, window.location));
       notify("Share link copied. It contains your code, so share it only with people you trust.");
@@ -551,26 +661,14 @@ export default function App() {
     }
   };
 
-  const computeExportKeep = useCallback((): ReadonlySet<number> | null => {
-    if (settings.exportRange === "all") return null;
-    if (settings.exportRange === "annotated") {
-      const keep = new Set<number>();
-      for (const set of [annotations.highlight, annotations.added, annotations.removed]) {
-        for (const line of set) keep.add(line);
-      }
-      if (keep.size === 0) throw new Error("No lines selected for export. Highlight lines first or choose All lines.");
-      return keep;
-    }
-    // Custom range is expressed in display line numbers (including the configured starting line).
-    const keep = parseLineSpec(settings.exportRangeSpec);
-    if (keep.size === 0) throw new Error("Enter a valid custom range, for example 2, 5-7.");
-    return keep;
-  }, [settings.exportRange, settings.exportRangeSpec, annotations]);
-
   const performExport = useCallback(
     async (action: "download" | "copy" | "share") => {
       const node = exportRef.current;
       if (!node || exportLock.current) return;
+      if (previewCode !== code) {
+        notify("The preview is updating. Please export again in a moment.");
+        return;
+      }
       if (!code.trim()) {
         notify("Add a little code first.", true);
         editCode();
@@ -578,26 +676,17 @@ export default function App() {
       }
       exportLock.current = true;
       setExporting(true);
-      let cloned: HTMLElement | null = null;
       try {
         if (action === "copy" && (!navigator.clipboard?.write || !window.ClipboardItem)) {
           throw new Error("Image copying is unavailable in this browser. Download the image instead.");
         }
         const format = action === "download" ? settings.exportFormat : "png";
-        const keep = computeExportKeep();
-        const source = keep ? cloneWithExportRange(node, keep) : node;
-        if (keep) cloned = source;
-        const render = renderImage(source, {
+        const render = renderImage(node, {
           scale: settings.exportScale,
           fontId: settings.fontId,
           format,
           quality: settings.exportQuality,
           background: "#ffffff",
-        }).finally(() => {
-          if (cloned) {
-            cloned.remove();
-            cloned = null;
-          }
         });
 
         if (action === "copy") {
@@ -619,10 +708,6 @@ export default function App() {
           setDialog("share");
         }
       } catch (error) {
-        if (cloned) {
-          cloned.remove();
-          cloned = null;
-        }
         notify(
           error instanceof Error && error.name !== "NotAllowedError"
             ? error.message
@@ -634,8 +719,40 @@ export default function App() {
         setExporting(false);
       }
     },
-    [code, editCode, notify, settings, title, exportFormat.label, computeExportKeep],
+    [code, previewCode, editCode, notify, settings, title, exportFormat.label],
   );
+
+  const exportGif = useCallback(async () => {
+    const node = exportRef.current;
+    if (!node || exportLock.current || !code.trim()) return;
+    exportLock.current = true;
+    setExporting(true);
+    setGifProgress(0);
+    const totalLines = code.split("\n").length;
+    try {
+      const blob = await renderTypingGif(node, {
+        fontId: settings.fontId,
+        speed: settings.gifSpeed,
+        totalLines,
+        onProgress: setGifProgress,
+        setVisibleLines: (count) =>
+          new Promise<void>((resolve) => {
+            setVisibleLines(count);
+            // Two frames: one for React commit, one for layout, so html-to-image sees the new rows.
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+      });
+      downloadBlob(blob, imageFilename(title, "gif"));
+      notify(`Typing GIF ready (${Math.round(blob.size / 1024)} KB). Download started.`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "The GIF could not be created.", true);
+    } finally {
+      setVisibleLines(null);
+      setGifProgress(null);
+      exportLock.current = false;
+      setExporting(false);
+    }
+  }, [code, settings.fontId, settings.gifSpeed, title, notify]);
 
   const shareImage = async () => {
     if (!shareFile) return;
@@ -871,19 +988,40 @@ export default function App() {
               onShuffle={shuffle}
               onSample={loadSample}
               onFile={(file) => void loadFile(file)}
-              onCopyCode={() => void handleCopyCode()}
               onCopyStyleJson={() => void copyStyleJson()}
               onImportStyleJson={() => setDialog("import-style")}
               onDownload={() => void performExport("download")}
               onCopy={() => void performExport("copy")}
               onCopyLink={() => void copyShareLink()}
-              onPrint={handlePrint}
-              onPickBrandMark={(file) => void pickBrandMark(file)}
-              onRemoveBrandMark={removeBrandMark}
               onNotice={notify}
               exporting={exporting}
               width={fit.width}
               height={fit.height}
+              pro={{
+                settings,
+                onSettings: patch,
+                lineInputs,
+                onLineInputs: patchLineInputs,
+                overlays,
+                selectedOverlayId,
+                onSelectOverlay: setSelectedOverlayId,
+                onAddText: addTextOverlay,
+                onAddArrow: addArrowOverlay,
+                onUpdateOverlay: updateOverlay,
+                onRemoveOverlay: removeOverlay,
+                author,
+                onAuthor: patchAuthor,
+                onPickAvatar: (file) => void pickAvatar(file),
+                compare,
+                onCompare: patchCompare,
+                customTheme,
+                onCustomTheme: patchCustomTheme,
+                onForkTheme: forkCurrentTheme,
+                onExportGif: () => void exportGif(),
+                gifProgress,
+                exporting,
+                hasCode,
+              }}
             />
           </fieldset>
 
@@ -965,6 +1103,12 @@ export default function App() {
                         font={font}
                         settings={settings}
                         annotations={annotations}
+                        overlays={overlays}
+                        author={author}
+                        compare={settings.compareMode ? compare : null}
+                        visibleLines={visibleLines}
+                        selectedOverlayId={selectedOverlayId}
+                        onOverlayPointerDown={handleOverlayPointerDown}
                         onLineClick={handlePreviewLineClick}
                         shadowCss={shadow}
                         bgStyle={bgStyle}
@@ -978,7 +1122,7 @@ export default function App() {
                   <div className="drop-overlay">
                     <Upload size={32} />
                     <strong>Drop a little inspiration.</strong>
-                    <span>Code or text files, up to 5 MB.</span>
+                    <span>Code or text files, up to 1 MB.</span>
                   </div>
                 )}
               </div>

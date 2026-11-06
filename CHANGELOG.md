@@ -4,14 +4,25 @@ Notable changes are recorded here. Version tags follow Semantic Versioning.
 
 ## Unreleased
 
-### Added in studio v1.3
+### Added in studio v1.3 (Pro, free)
 
-- **Export line ranges:** export the entire snippet, only highlighted / diff lines, or a custom line range (e.g., `2, 5-7`) for focused social cards and documentation snippets.
-- **Brand mark / logo:** upload a small PNG, JPEG, or WebP logo (resized on-device and stored as a compact data URL) and place it `top-right` or `bottom-right` on the image.
-- **Headline overlay:** add an optional bold headline above the code window, with light or dark tone for dark or light backgrounds.
-- **Print / Save as PDF:** a print-optimized view that outputs only the export canvas.
-- **Coalesced undo history:** drags and repeated line clicks now count as single undo steps, keeping the history useful during long editing sessions.
-- **Copy code** button in the Code tab, and updated limits and help text to reflect **500,000-character** snippets and **5 MB** files.
+- **Pro tab** with seven features that comparable tools sell as paid plans, all rendered on-device:
+  - **Text & arrow annotations:** up to 20 draggable callouts/arrows, 8 colours, included in all image formats and share links.
+  - **Blur secrets & gray-out lines** with an unfocused-opacity slider and a new `grayscale` unfocused mode.
+  - **Author branding card** (name, handle, platform, position) with an avatar resized to 128 px on-device and EXIF stripped. Stored only in this browser; never placed in share links.
+  - **Compare mode:** two code windows side by side with line/glow/none dividers; the right window travels in share links.
+  - **3D tilt** (left/right/up) and **floor reflection**.
+  - **Custom theme editor:** fork any theme, edit 15 tokens, live WCAG AA contrast warnings, persisted locally.
+  - **Animated typing GIF** export (gifenc, MIT): line-by-line reveal, three speeds, capped at 60 frames and 1400 px.
+- Undo/Redo, Shift-click range selection and Alt-click diff cycling now cover the new annotation state.
+
+### Fixed in v1.3
+
+- **Custom theme could never be applied:** `sanitizeSettings` rejected the `custom-theme` id. Covered by a unit test.
+- **Fast reload lost author/theme edits:** debounced saves are now flushed on `pagehide`/`beforeunload`.
+- **Keyboard tab cycling skipped the last tab:** arrow navigation was hard-coded to three tabs.
+- **Shift/Alt-click in the preview started a native text selection** that looked like a stray highlight; rows are now `user-select: none` and the modifier click is prevented.
+- Share-link copy now confirms via toast before the clipboard is read in tests, matching real user flow.
 
 ### Added in studio v1.2
 

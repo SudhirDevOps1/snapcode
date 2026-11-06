@@ -1,10 +1,14 @@
 import { isRecord } from "./guards";
 
-/** Annotation state that the preview renders: highlights, diff markers, and focus mode. */
+/** Annotation state that the preview renders: highlights, diff markers, blur/gray-out, and focus mode. */
 export interface LineAnnotations {
   highlight: Set<number>;
   added: Set<number>;
   removed: Set<number>;
+  /** Lines explicitly blurred (e.g. to hide secrets or API keys). */
+  blurred: Set<number>;
+  /** Lines explicitly grayed out (de-emphasised without hiding). */
+  grayed: Set<number>;
   dimUnfocused: boolean;
   focusOnly: boolean;
   focusContext: number;
@@ -15,6 +19,8 @@ export interface LineInputs {
   highlightSpec: string;
   addedSpec: string;
   removedSpec: string;
+  blurSpec: string;
+  graySpec: string;
   dimUnfocused: boolean;
   focusOnly: boolean;
   focusContext: number;
@@ -24,6 +30,8 @@ export const EMPTY_LINE_INPUTS: LineInputs = {
   highlightSpec: "",
   addedSpec: "",
   removedSpec: "",
+  blurSpec: "",
+  graySpec: "",
   dimUnfocused: false,
   focusOnly: false,
   focusContext: 1,
@@ -37,6 +45,8 @@ export interface LineRow {
   removed: boolean;
   highlighted: boolean;
   dimmed: boolean;
+  blurred: boolean;
+  grayed: boolean;
 }
 
 /** Marks a collapsed run of lines in focus mode. */
@@ -83,6 +93,8 @@ export function buildRows(lines: readonly string[], startLine: number, annotatio
       removed: annotations.removed.has(n),
       highlighted: annotations.highlight.has(n),
       dimmed: annotations.dimUnfocused && annotated && !marked,
+      blurred: annotations.blurred.has(n),
+      grayed: annotations.grayed.has(n),
     });
   });
 
@@ -101,6 +113,8 @@ export function sanitizeLineInputs(input: unknown): LineInputs {
     highlightSpec: text(raw.highlightSpec),
     addedSpec: text(raw.addedSpec),
     removedSpec: text(raw.removedSpec),
+    blurSpec: text(raw.blurSpec),
+    graySpec: text(raw.graySpec),
     dimUnfocused: raw.dimUnfocused === true,
     focusOnly: raw.focusOnly === true,
     focusContext: context,

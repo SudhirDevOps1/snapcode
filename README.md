@@ -15,22 +15,37 @@ A private, local-first code-to-image studio. Paste code, style it, and export a 
 
 </div>
 
-> **Workflow status:** the app and reviewed workflow templates are on `main`. Live GitHub Actions badges are enabled after the owner pushes `.github/workflows/` with a token that has **Workflows: Read and write**. See [workflow activation](docs/WORKFLOW_ACTIVATION.md). The local verification snapshot is **109 unit tests and 44 desktop/mobile browser runs**.
+> **Workflow status:** the app and reviewed workflow templates are on `main`. Live GitHub Actions badges are enabled after the owner pushes `.github/workflows/` with a token that has **Workflows: Read and write**. See [workflow activation](docs/WORKFLOW_ACTIVATION.md). The local verification snapshot is **122 unit tests and 62 desktop/mobile browser runs**.
+
+## Pro features, free
+
+Everything that comparable tools put behind a paid plan is included, runs on-device, and has no watermark by default. See the [feature comparison](docs/ROADMAP.md#feature-comparison) for how each was verified.
+
+| Pro feature                  | What it does                                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Text & arrow annotations** | Add up to 20 draggable callouts and arrows on the canvas. 8 colours, adjustable size and thickness. Exported into PNG/JPEG/WebP/SVG and share links. |
+| **Blur secrets & gray-out**  | Blur API keys or tokens per line (`3, 7-9`), gray-out boilerplate, and tune unfocused opacity. Blurred lines are also unselectable.                  |
+| **Author branding**          | Name, handle, platform (X, GitHub, LinkedIn, YouTube, Instagram) and an avatar that is resized to 128 px on-device with metadata removed.            |
+| **Compare two snippets**     | Side-by-side before/after windows with line, glow, or no divider. The right window is included in share links.                                       |
+| **3D tilt & reflection**     | Perspective tilt left/right/up and a floor reflection, both baked into exports.                                                                      |
+| **Custom theme editor**      | Fork any of the 32 themes, edit all 15 token colours, and get live WCAG AA contrast warnings. Saved in this browser.                                 |
+| **Animated typing GIF**      | Line-by-line reveal encoded locally (up to 60 frames, 1400 px, three speeds). No upload, no account.                                                 |
+
+<img src="docs/screenshots/pro-canvas.png" alt="Annotations, arrow, line highlights, blurred secret line, and author card on a Snapcode export" width="720" />
 
 ## Highlights
 
-| Area             | What you get                                                                                                                                                                                                                                                      |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                                                                                              |
-| **Focus & diff** | Click any line in the preview (`Shift+Click` for range, `Alt+Click` for `+`/`-` diff) or type ranges (`2, 5-7`), choose from 5 highlight accent colours, dim or blur unfocused lines, or show only annotated lines with context.                                  |
-| **Style**        | 32 editor themes (23 dark, 9 light), 17 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, window width presets, language badge, custom watermark text, headline overlay, brand mark / logo, grain texture. |
-| **Backgrounds**  | 18 gradient and mesh backgrounds, 6 geometric patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).                                                                             |
-| **Export**       | Export only highlighted or custom line ranges, export as PNG / JPEG / WebP / SVG, or print to PDF.                                                                                                                                                                |
-| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded.                                                                                                                                                                    |
-| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame.                                                                              |
-| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                                                                                                   |
-| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                                                                                               |
-| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, and WCAG AA checks in the browser test suite.                                                                                                                  |
+| Area             | What you get                                                                                                                                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                                                             |
+| **Focus & diff** | Click any line in the preview (`Shift+Click` for range, `Alt+Click` for `+`/`-` diff) or type ranges (`2, 5-7`), choose from 5 highlight accent colours, dim or blur unfocused lines, or show only annotated lines with context. |
+| **Style**        | 32 editor themes (23 dark, 9 light), 17 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, window width presets, language badge, custom watermark text, grain texture.     |
+| **Backgrounds**  | 18 gradient and mesh backgrounds, 6 geometric patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).                                            |
+| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded; **animated typing GIF**.                                                                                                          |
+| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame.                                             |
+| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                                                                  |
+| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                                                              |
+| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, and WCAG AA checks in the browser test suite.                                                                                 |
 
 <img src="docs/screenshots/social-frame.png" alt="A 1200 by 630 social card generated by Snapcode" width="600" />
 

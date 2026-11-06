@@ -45,29 +45,6 @@ export interface RenderResult {
 
 const skipExportOnly = (node: HTMLElement) => !(node instanceof HTMLElement && node.dataset.exportHide === "true");
 
-/**
- * Clones the preview off-screen and removes code rows whose display line number is not in `keep`.
- * Used for exporting only highlighted/diff lines or a custom range. The live preview is never modified.
- */
-export function cloneWithExportRange(node: HTMLElement, keep: ReadonlySet<number>): HTMLElement {
-  const clone = node.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll<HTMLElement>(".code-line:not(.is-gap)").forEach((row) => {
-    const line = Number(row.dataset.line ?? "");
-    if (!keep.has(line)) row.remove();
-  });
-  clone.querySelectorAll<HTMLElement>(".code-line.is-gap").forEach((row) => row.remove());
-  if (clone.querySelectorAll(".code-line:not(.is-gap)").length === 0) {
-    throw new Error("No lines selected for export. Choose a range with lines present.");
-  }
-  clone.style.position = "fixed";
-  clone.style.left = "-100000px";
-  clone.style.top = "0";
-  clone.style.margin = "0";
-  clone.style.pointerEvents = "none";
-  document.body.appendChild(clone);
-  return clone;
-}
-
 /** Converts html-to-image's SVG data URL to a Blob without a network request (CSP-safe). */
 function svgDataUrlToBlob(dataUrl: string): Blob {
   const comma = dataUrl.indexOf(",");

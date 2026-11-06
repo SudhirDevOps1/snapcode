@@ -5,6 +5,7 @@ Snapcode's own code is MIT licensed. Dependencies retain their original copyrigh
 - React, React DOM, Vite, Tailwind CSS, html-to-image, clsx, and tailwind-merge: MIT-family open-source licenses; consult each installed package's license.
 - Highlight.js: BSD-3-Clause.
 - Lucide: ISC.
+- gifenc (animated GIF encoding): MIT.
 - Inter, JetBrains Mono, Fira Code, Cascadia Code, IBM Plex Mono, Source Code Pro, Victor Mono, Martian Mono, Inconsolata, Space Mono, Roboto Mono, Geist Mono, Red Hat Mono, Azeret Mono, DM Mono, Anonymous Pro, and Overpass Mono: SIL Open Font License 1.1. Fontsource packages include their upstream font license files.
 - Ubuntu Mono: Ubuntu Font License. Review its distinct terms before redistributing a modified font.
 

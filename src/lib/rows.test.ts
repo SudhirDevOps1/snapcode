@@ -6,6 +6,8 @@ const base: LineAnnotations = {
   highlight: new Set(),
   added: new Set(),
   removed: new Set(),
+  blurred: new Set(),
+  grayed: new Set(),
   dimUnfocused: false,
   focusOnly: false,
   focusContext: 1,
@@ -57,6 +59,16 @@ describe("buildRows", () => {
 
   it("focus mode without annotations keeps everything", () => {
     expect(buildRows(lines, 1, { ...base, focusOnly: true })).toHaveLength(10);
+  });
+
+  it("marks blurred and grayed lines independently of highlights", () => {
+    const rows = buildRows(lines, 1, { ...base, blurred: new Set([3]), grayed: new Set([5]) });
+    const byN = new Map(rows.map((row) => [row.kind === "line" ? row.n : -1, row]));
+    expect(byN.get(3)).toMatchObject({ blurred: true, grayed: false, highlighted: false });
+    expect(byN.get(5)).toMatchObject({ grayed: true, blurred: false });
+    // Blur/gray never trigger focus mode or dimming on their own.
+    expect(rows).toHaveLength(10);
+    expect(rows.some((row) => row.kind === "line" && row.dimmed)).toBe(false);
   });
 
   it("clamps focus context to three lines", () => {

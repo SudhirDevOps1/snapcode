@@ -1,11 +1,15 @@
 import { LANGUAGES, MAX_CODE_CHARS } from "./data";
 import { isRecord } from "./guards";
+import { sanitizeOverlays, type Overlay } from "./overlays";
 import { sanitizeLineInputs, type LineInputs } from "./rows";
 import { sanitizeSettings, type Settings } from "./settings";
 
 /**
  * Share links keep the whole snippet inside the URL fragment (`#s=...`). Browsers never send fragments
  * to a server, so the code stays on the device. Payload: JSON -> gzip -> base64url.
+ *
+ * Author branding and avatars are deliberately NOT included: they are personal data that should stay
+ * on the author's device unless they export an image.
  */
 export interface SharedSnippet {
   code: string;
@@ -13,6 +17,11 @@ export interface SharedSnippet {
   language: string;
   lineInputs: LineInputs;
   settings: Settings;
+  /** Optional in v1 payloads; absent for links created before annotations existed. */
+  overlays?: Overlay[];
+  compareCode?: string;
+  compareTitle?: string;
+  compareLanguage?: string;
 }
 
 export const SHARE_HASH_PREFIX = "#s=";
@@ -85,6 +94,10 @@ export async function encodeShare(snippet: SharedSnippet): Promise<string> {
     language: LANGUAGE_IDS.has(snippet.language) ? snippet.language : "auto",
     lineInputs: sanitizeLineInputs(snippet.lineInputs),
     settings: sanitizeSettings(snippet.settings),
+    overlays: sanitizeOverlays(snippet.overlays ?? []),
+    compareCode: (snippet.compareCode ?? "").slice(0, 100_000),
+    compareTitle: (snippet.compareTitle ?? "").slice(0, 100),
+    compareLanguage: LANGUAGE_IDS.has(snippet.compareLanguage ?? "") ? snippet.compareLanguage : "auto",
   });
   const token = toBase64Url(await gzip(new TextEncoder().encode(payload)));
   if (token.length > MAX_SHARE_TOKEN_CHARS) {
@@ -111,6 +124,11 @@ export async function decodeShare(token: string): Promise<SharedSnippet> {
     language: typeof raw.language === "string" && LANGUAGE_IDS.has(raw.language) ? raw.language : "auto",
     lineInputs: sanitizeLineInputs(raw.lineInputs),
     settings: sanitizeSettings(raw.settings),
+    overlays: sanitizeOverlays(raw.overlays),
+    compareCode: typeof raw.compareCode === "string" ? raw.compareCode.replace(/\r\n?/g, "\n").slice(0, 100_000) : "",
+    compareTitle: typeof raw.compareTitle === "string" ? raw.compareTitle.slice(0, 100) : "after.ts",
+    compareLanguage:
+      typeof raw.compareLanguage === "string" && LANGUAGE_IDS.has(raw.compareLanguage) ? raw.compareLanguage : "auto",
   };
 }
 

@@ -37,6 +37,7 @@ const packages = [
   "react-dom",
   "highlight.js",
   "html-to-image",
+  "gifenc",
   "lucide-react",
   "clsx",
   "tailwind-merge",

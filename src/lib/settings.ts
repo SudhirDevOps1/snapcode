@@ -17,12 +17,18 @@ import { isRecord } from "./guards";
 export type WindowStyle = "mac" | "mac-outline" | "win" | "terminal" | "none";
 export type WindowBorder = "subtle" | "crisp" | "glass" | "glow";
 export type UiTheme = "light" | "dark";
-export type UnfocusedMode = "dim" | "blur";
+export type UnfocusedMode = "dim" | "blur" | "grayscale";
 export type TabSize = 2 | 4 | 8;
 export type ExportScale = 2 | 3 | 4;
-export type ExportRange = "all" | "annotated" | "custom";
-export type BrandMarkPosition = "top-right" | "bottom-right";
-export type HeadlineTone = "light" | "dark";
+export type TiltId = "none" | "left" | "right" | "up";
+export type DividerStyle = "none" | "line" | "glow";
+
+export const TILTS: { id: TiltId; name: string; transform: string }[] = [
+  { id: "none", name: "Flat", transform: "none" },
+  { id: "left", name: "Tilt left", transform: "perspective(1400px) rotateY(10deg) rotateX(3deg)" },
+  { id: "right", name: "Tilt right", transform: "perspective(1400px) rotateY(-10deg) rotateX(3deg)" },
+  { id: "up", name: "Tilt up", transform: "perspective(1400px) rotateX(8deg)" },
+];
 
 /** Every user-facing style preference. Code and imported files are never part of these settings. */
 export interface Settings {
@@ -61,14 +67,13 @@ export interface Settings {
   exportScale: ExportScale;
   exportFormat: ExportFormatId;
   exportQuality: number;
-  exportRange: ExportRange;
-  exportRangeSpec: string;
-  showBrandMark: boolean;
-  brandMarkDataUrl: string;
-  brandMarkPosition: BrandMarkPosition;
-  showHeadline: boolean;
-  headlineText: string;
-  headlineTone: HeadlineTone;
+  /** v1.3 Pro additions */
+  unfocusedOpacity: number;
+  tilt: TiltId;
+  reflection: boolean;
+  compareMode: boolean;
+  compareDivider: DividerStyle;
+  gifSpeed: "fast" | "normal" | "slow";
 }
 
 export const STORAGE_KEY = "snapcode.settings.v1";
@@ -109,18 +114,15 @@ export const DEFAULT_SETTINGS: Settings = {
   exportScale: 2,
   exportFormat: "png",
   exportQuality: 0.92,
-  exportRange: "all",
-  exportRangeSpec: "",
-  showBrandMark: false,
-  brandMarkDataUrl: "",
-  brandMarkPosition: "bottom-right",
-  showHeadline: false,
-  headlineText: "",
-  headlineTone: "light",
+  unfocusedOpacity: 0.34,
+  tilt: "none",
+  reflection: false,
+  compareMode: false,
+  compareDivider: "line",
+  gifSpeed: "normal",
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
-const DATA_IMAGE_RASTER = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 const clampInt = (value: unknown, min: number, max: number, fallback: number): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
@@ -151,11 +153,8 @@ export function sanitizeSettings(input: unknown): Settings {
 
   return {
     uiTheme: oneOf(raw.uiTheme, ["light", "dark"] as const, d.uiTheme),
-    themeId: oneOf(
-      raw.themeId,
-      THEMES.map((t) => t.id),
-      d.themeId,
-    ),
+    // "custom-theme" is the user-built theme from the Pro editor; it lives outside the built-in catalogue.
+    themeId: oneOf(raw.themeId, [...THEMES.map((t) => t.id), "custom-theme"], d.themeId),
     fontId: oneOf(
       raw.fontId,
       FONTS.map((f) => f.id),
@@ -186,7 +185,7 @@ export function sanitizeSettings(input: unknown): Settings {
     showLineNumbers: bool(raw.showLineNumbers, d.showLineNumbers),
     lineStart: clampInt(raw.lineStart, 1, 50_000, d.lineStart),
     highlightColor: oneOf(raw.highlightColor, HIGHLIGHT_COLOR_IDS, d.highlightColor),
-    unfocusedMode: oneOf(raw.unfocusedMode, ["dim", "blur"] as const, d.unfocusedMode),
+    unfocusedMode: oneOf(raw.unfocusedMode, ["dim", "blur", "grayscale"] as const, d.unfocusedMode),
     showHeader: bool(raw.showHeader, d.showHeader),
     showBadge: bool(raw.showBadge, d.showBadge),
     windowStyle: oneOf(raw.windowStyle, ["mac", "mac-outline", "win", "terminal", "none"] as const, d.windowStyle),
@@ -204,19 +203,12 @@ export function sanitizeSettings(input: unknown): Settings {
     exportScale: oneOf(raw.exportScale, [2, 3, 4] as const, d.exportScale),
     exportFormat: oneOf(raw.exportFormat, EXPORT_FORMAT_IDS, d.exportFormat),
     exportQuality: clampDecimal(raw.exportQuality, 0.5, 1, d.exportQuality, 2),
-    exportRange: oneOf(raw.exportRange, ["all", "annotated", "custom"] as const, d.exportRange),
-    exportRangeSpec: typeof raw.exportRangeSpec === "string" ? raw.exportRangeSpec.slice(0, 120) : d.exportRangeSpec,
-    showBrandMark: bool(raw.showBrandMark, d.showBrandMark),
-    brandMarkDataUrl:
-      typeof raw.brandMarkDataUrl === "string" &&
-      raw.brandMarkDataUrl.length <= 400_000 &&
-      DATA_IMAGE_RASTER.test(raw.brandMarkDataUrl)
-        ? raw.brandMarkDataUrl
-        : d.brandMarkDataUrl,
-    brandMarkPosition: oneOf(raw.brandMarkPosition, ["top-right", "bottom-right"] as const, d.brandMarkPosition),
-    showHeadline: bool(raw.showHeadline, d.showHeadline),
-    headlineText: typeof raw.headlineText === "string" ? raw.headlineText.trim().slice(0, 80) : d.headlineText,
-    headlineTone: oneOf(raw.headlineTone, ["light", "dark"] as const, d.headlineTone),
+    unfocusedOpacity: clampDecimal(raw.unfocusedOpacity, 0.1, 0.8, d.unfocusedOpacity, 2),
+    tilt: oneOf(raw.tilt, ["none", "left", "right", "up"] as const, d.tilt),
+    reflection: bool(raw.reflection, d.reflection),
+    compareMode: bool(raw.compareMode, d.compareMode),
+    compareDivider: oneOf(raw.compareDivider, ["none", "line", "glow"] as const, d.compareDivider),
+    gifSpeed: oneOf(raw.gifSpeed, ["fast", "normal", "slow"] as const, d.gifSpeed),
   };
 }
 

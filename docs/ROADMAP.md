@@ -20,6 +20,27 @@ This document records what shipped in the v1.1 studio, the research behind it, h
 
 **Verification snapshot for this build:** 105 unit tests. 19 E2E scenarios on desktop and mobile Chromium (38 runs). axe WCAG 2.0 and 2.1 AA checks on the default view, the Code and Export tabs, and dark studio mode. Production audit: 0 vulnerabilities. Format, typecheck, lint, and production build all pass.
 
+## Feature comparison
+
+Research for v1.3 looked at what comparable code-image tools charge for and what they offer free. Sources are public pricing and feature pages captured on 2026-11-06; verify current pricing before quoting it.
+
+| Capability                         | Snappify (Pro, from $5/mo) | Carbon       | Ray.so | Chalk.ist | **Snapcode**                                   |
+| ---------------------------------- | -------------------------- | ------------ | ------ | --------- | ---------------------------------------------- |
+| Text & arrow annotations           | Paid                       | No           | No     | No        | **Free** · E2E: drag + export                  |
+| Blur / gray-out / opacity on lines | Paid                       | No           | No     | No        | **Free** · E2E                                 |
+| Author / profile branding          | Paid                       | No           | No     | No        | **Free, local-only** · E2E persistence         |
+| Multiple code windows              | Paid                       | No           | No     | Yes       | **Free** (compare mode) · E2E                  |
+| Animated typing export             | Paid (video)               | No           | No     | No        | **Free** (GIF, on-device) · E2E multi-frame    |
+| Custom theme editor                | No                         | No           | No     | No        | **Free, with WCAG warnings** · unit + E2E      |
+| Remove watermark                   | Paid                       | n/a          | n/a    | n/a       | **No watermark by default**                    |
+| Snippet library                    | Paid (3 free)              | Account      | No     | No        | **Free, 30 local**                             |
+| Share links                        | Paid views cap             | Yes (server) | No     | Yes       | **Free, URL-fragment only, never on a server** |
+| Account required                   | For most features          | Optional     | No     | No        | **Never**                                      |
+
+Sources: https://www.toolbit.ai/ai-tool/snappify · https://snappify.com/docs/editor/elements/code-editor · https://www.screensnap.pro/blog/best-code-to-image-tools · https://www.screenshot-studio.com/guides/best-code-to-image-tools
+
+**What was deliberately not copied:** Snappify's hosted embeds, cloud dashboard, VS Code extension, and MP4 video export need a server or a separate extension distribution channel. Snapcode stays a single static, offline-capable page by design; these remain on the deferred list.
+
 ## Research
 
 ### Competitive scan
