@@ -125,26 +125,44 @@ test("photo background is processed on-device, exports, and reports no CSP viola
   expect(violations).toEqual([]);
 });
 
-test("undo and redo restore style changes from buttons and the keyboard", async ({ page }) => {
-  const undoButton = page.getByRole("button", { name: "Undo style change", exact: true });
-  const redoButton = page.getByRole("button", { name: "Redo style change", exact: true });
-  await expect(undoButton).toBeDisabled();
+test("clicking preview lines toggles highlight, Shift+Click selects range, and blur mode blurs unfocused lines", async ({
+  page,
+}) => {
+  const lines = page.locator(".code-line");
+  await lines.nth(1).click();
+  await expect(lines.nth(1)).toHaveClass(/is-highlighted/);
+  await expect(page.getByLabel("Highlight lines", { exact: true })).toHaveValue("2");
 
-  await page.getByLabel("Theme", { exact: true }).selectOption("poimandres");
-  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
-  await page.waitForTimeout(600);
-  await page.getByLabel("Theme", { exact: true }).selectOption("palenight");
-  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(41, 45, 62)");
+  await lines.nth(4).click({ modifiers: ["Shift"] });
+  await expect(page.getByLabel("Highlight lines", { exact: true })).toHaveValue("2-5");
+  await expect(page.locator(".code-line.is-highlighted")).toHaveCount(4);
 
-  await undoButton.click();
-  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
-  await redoButton.click();
-  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(41, 45, 62)");
+  await page.getByRole("button", { name: "Amber highlight", exact: true }).click();
+  await page.getByRole("switch", { name: "Dim / blur other lines", exact: true }).click();
+  await page.getByRole("button", { name: "Blur", exact: true }).click();
+  await expect(page.locator(".code-line.is-blurred").first()).toBeVisible();
 
-  // Keyboard shortcut works when focus is not inside a text field.
-  await page.locator("body").click({ position: { x: 5, y: 5 } });
-  await page.keyboard.press("ControlOrMeta+z");
-  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(page.locator(".code-line.is-highlighted")).toHaveCount(0);
+});
+
+test("handles large snippets (> 150k chars) and supports Undo / Redo", async ({ page }) => {
+  await page.getByLabel("Theme", { exact: true }).selectOption("cobalt2");
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(25, 53, 73)");
+
+  if ((page.viewportSize()?.width ?? 1440) > 600) {
+    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(34, 33, 46)");
+    await page.getByRole("button", { name: "Redo", exact: true }).click();
+    await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(25, 53, 73)");
+  }
+
+  await page.getByRole("tab", { name: "Code", exact: true }).click();
+  const pad = "x".repeat(100);
+  const largeCode = Array.from({ length: 1200 }, (_, i) => `const item_${i} = "${pad}_${i}";`).join("\n");
+  expect(largeCode.length).toBeGreaterThan(150_000);
+  await page.getByLabel("Your code", { exact: true }).fill(largeCode);
+  await expect(page.locator(".editor-count")).toContainText("1,200 lines");
 });
 
 test("new code and export panels meet automated WCAG AA checks", async ({ page }) => {

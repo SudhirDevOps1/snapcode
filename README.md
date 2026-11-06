@@ -5,9 +5,9 @@
 **Your code, beautifully framed.**
 A private, local-first code-to-image studio. Paste code, style it, and export a crisp PNG, JPEG, WebP, or SVG. Share a link whose code lives only in the URL.
 
-[![CI](https://github.com/SudhirDevOps1/snapcode/actions/workflows/ci.yml/badge.svg)](https://github.com/SudhirDevOps1/snapcode/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/SudhirDevOps1/snapcode/actions/workflows/codeql.yml/badge.svg)](https://github.com/SudhirDevOps1/snapcode/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/SudhirDevOps1/snapcode/badge)](https://securityscorecards.dev/viewer/?uri=github.com/SudhirDevOps1/snapcode)
+[![CI templates](https://img.shields.io/badge/CI-ready%20to%20activate-7755DB)](docs/WORKFLOW_ACTIVATION.md)
+[![CodeQL template](https://img.shields.io/badge/CodeQL-template%20included-7755DB)](docs/workflows/codeql.yml)
+[![Scorecard template](https://img.shields.io/badge/OpenSSF%20Scorecard-template%20included-7755DB)](docs/workflows/scorecard.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-7755DB.svg)](LICENSE)
 [![Node 22 LTS](https://img.shields.io/badge/node-22%20LTS-339933.svg)](.nvmrc)
 
@@ -15,19 +15,21 @@ A private, local-first code-to-image studio. Paste code, style it, and export a 
 
 </div>
 
+> **Workflow status:** the app and reviewed workflow templates are on `main`. Live GitHub Actions badges are enabled after the owner pushes `.github/workflows/` with a token that has **Workflows: Read and write**. See [workflow activation](docs/WORKFLOW_ACTIVATION.md). The local verification snapshot is **108 unit tests and 42 desktop/mobile browser runs**.
+
 ## Highlights
 
-| Area             | What you get                                                                                                                                                                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                                                                                                  |
-| **Focus & diff** | Highlight specific lines (`2, 5-7`), mark added `+` and removed `-` lines, dim the rest, or show only annotated lines with context and gap markers.                                                                                                                   |
-| **Style**        | 28 editor themes (21 dark, 7 light), 18 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, language badge, grain texture. **Undo/redo** for every style change (buttons or Ctrl/Cmd + Z, Ctrl/Cmd + Shift + Z). |
-| **Backgrounds**  | 19 gradient and mesh backgrounds, 4 patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).                                                                                           |
-| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded.                                                                                                                                                                        |
-| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame.                                                                                  |
-| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                                                                                                       |
-| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                                                                                                   |
-| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, WCAG AA checks in CI.                                                                                                                                              |
+| Area             | What you get                                                                                                                                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                                                             |
+| **Focus & diff** | Click any line in the preview (`Shift+Click` for range, `Alt+Click` for `+`/`-` diff) or type ranges (`2, 5-7`), choose from 5 highlight accent colours, dim or blur unfocused lines, or show only annotated lines with context. |
+| **Style**        | 32 editor themes (23 dark, 9 light), 17 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, window width presets, language badge, custom watermark text, grain texture.     |
+| **Backgrounds**  | 18 gradient and mesh backgrounds, 6 geometric patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).                                            |
+| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded.                                                                                                                                   |
+| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame.                                             |
+| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                                                                  |
+| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                                                              |
+| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, and WCAG AA checks in the browser test suite.                                                                                 |
 
 <img src="docs/screenshots/social-frame.png" alt="A 1200 by 630 social card generated by Snapcode" width="600" />
 
@@ -89,24 +91,14 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 
 ## CI/CD and repository workflows
 
-> **Status: templates ready, activation pending.** The workflows live in [`docs/workflows/`](docs/workflows) because the token used to publish this repository lacks GitHub's `workflow` permission, and GitHub rejects any push that touches `.github/workflows/` without it. Until they are activated, the CI badges above show "no status" and only Dependabot runs.
->
-> **Activate:** follow [docs/WORKFLOW_ACTIVATION.md](docs/WORKFLOW_ACTIVATION.md), or run
->
-> ```bash
-> GH_TOKEN='token-with-workflows-scope' sh scripts/activate-workflows.sh
-> ```
->
-> The script copies `docs/workflows/*.yml` into `.github/workflows/`, commits them, and pushes without writing the token to git config. The token needs **Workflows: Read and write** (fine-grained) or the **`workflow`** scope (classic). You can also upload the files through the GitHub web UI (_Add file → Upload files_ into `.github/workflows/`).
-
-| Workflow                                                        | Trigger                         | What it does                                                                                                                                                                                         |
-| --------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`ci.yml`](docs/workflows/ci.yml)                               | Push and pull request to `main` | Format, lint, typecheck, unit tests, and build on Node 22 and 24. Desktop and mobile Playwright tests. Production audit. Container build and smoke test (health, CSP, non-root, security.txt).       |
-| [`codeql.yml`](docs/workflows/codeql.yml)                       | Push, pull request, weekly      | CodeQL analysis for JavaScript and TypeScript.                                                                                                                                                       |
-| [`scorecard.yml`](docs/workflows/scorecard.yml)                 | Push to `main`, weekly          | OpenSSF Scorecard supply-chain analysis, published with SARIF upload.                                                                                                                                |
-| [`dependency-review.yml`](docs/workflows/dependency-review.yml) | Pull request                    | Blocks dependency changes that add high-severity known vulnerabilities.                                                                                                                              |
-| [`release.yml`](docs/workflows/release.yml)                     | Tag `vX.Y.Z`                    | Verifies the tag matches `package.json`, runs the full check and browser suites, builds a ZIP with a CycloneDX SBOM and SHA-256 checksums, attests build provenance, and publishes a GitHub Release. |
-| [`dependabot.yml`](.github/dependabot.yml)                      | Weekly                          | Updates for npm, GitHub Actions, and Docker.                                                                                                                                                         |
+| Workflow                                                           | Trigger                         | What it does                                                                                                                                                                                         |
+| ------------------------------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ci.yml`](.github/workflows/ci.yml)                               | Push and pull request to `main` | Format, lint, typecheck, unit tests, and build on Node 22 and 24. Desktop and mobile Playwright tests. Production audit. Container build and smoke test (health, CSP, non-root, security.txt).       |
+| [`codeql.yml`](.github/workflows/codeql.yml)                       | Push, pull request, weekly      | CodeQL analysis for JavaScript and TypeScript.                                                                                                                                                       |
+| [`scorecard.yml`](.github/workflows/scorecard.yml)                 | Push to `main`, weekly          | OpenSSF Scorecard supply-chain analysis, published with SARIF upload.                                                                                                                                |
+| [`dependency-review.yml`](.github/workflows/dependency-review.yml) | Pull request                    | Blocks dependency changes that add high-severity known vulnerabilities.                                                                                                                              |
+| [`release.yml`](.github/workflows/release.yml)                     | Tag `vX.Y.Z`                    | Verifies the tag matches `package.json`, runs the full check and browser suites, builds a ZIP with a CycloneDX SBOM and SHA-256 checksums, attests build provenance, and publishes a GitHub Release. |
+| [`dependabot.yml`](.github/dependabot.yml)                         | Weekly                          | Updates for npm, GitHub Actions, and Docker.                                                                                                                                                         |
 
 **Recommended repository settings** (these cannot be set from files):
 
@@ -115,7 +107,7 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 - Default `GITHUB_TOKEN` permissions to read-only.
 - Dependency review needs the dependency graph, and CodeQL needs GitHub Code Security on private repositories.
 
-**Pushing workflow files:** a fine-grained token needs _Workflows: Read and write_ to push changes under `.github/workflows/`. A classic token needs the `workflow` scope. Without it, GitHub rejects the push.
+**Pushing workflow files:** a fine-grained token needs _Workflows: Read and write_ to push changes under `.github/workflows/`. A classic token needs the `workflow` scope. Without it, GitHub rejects the push. See [workflow activation](docs/WORKFLOW_ACTIVATION.md) for the secure owner setup and token-rotation instructions.
 
 ## Documentation
 
@@ -126,8 +118,7 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 
 ## Known limitations
 
-- The build is a single HTML file, so fonts and grammars are inlined. `index.html` is about 1.06 MB (about 559 KB gzipped); 18 embedded fonts account for most of it, and Commit Mono alone adds 48 KB of WOFF2. A multi-file build with on-demand font loading is the top roadmap item.
-- Undo/redo covers style settings. The code editor keeps the browser's native text undo.
+- The build is a single HTML file, so fonts and grammars are inlined. `index.html` is about 917 KB (about 461 KB gzipped). A multi-file build would allow on-demand loading; it is on the roadmap.
 - Docker and hosted GitHub Actions run in your repository, not in the development sandbox used to build this version. Check the first CI run.
 - WebP encoding depends on the browser. When it is unavailable, the export falls back to PNG and says so.
 - SVG uses `foreignObject`, which some vector editors render incorrectly. Browsers and most document tools display it correctly.

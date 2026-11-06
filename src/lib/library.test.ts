@@ -32,7 +32,7 @@ const item = (overrides: Partial<LibraryItem> = {}): LibraryItem => ({
 
 describe("sanitizeLibrary", () => {
   it("drops entries without valid code and keeps the rest", () => {
-    const clean = sanitizeLibrary([item(), { name: "no code" }, null, item({ code: "x".repeat(100_001) })]);
+    const clean = sanitizeLibrary([item(), { name: "no code" }, null, item({ code: "x".repeat(500_001) })]);
     expect(clean).toHaveLength(1);
     expect(clean[0].name).toBe("Demo");
   });

@@ -18,9 +18,7 @@ import {
   Moon,
   Palette,
   Plus,
-  Redo2,
   RotateCcw,
-  Undo2,
   Shuffle,
   Sparkles,
   Sun,
@@ -34,22 +32,26 @@ import {
   EXPORT_FORMATS,
   FONTS,
   FRAMES,
+  HIGHLIGHT_COLORS,
   LANGUAGES,
   MAX_CODE_CHARS,
   SHADOWS,
   THEMES,
+  WINDOW_WIDTHS,
   type ExportFormatId,
   type FrameId,
+  type WindowWidthId,
 } from "../lib/data";
 import { PHOTO_TYPES, type BackgroundPhoto } from "../lib/photo";
 import type { LibraryItem } from "../lib/library";
 import type { LineInputs } from "../lib/rows";
-import type { Settings, TabSize, WindowBorder, WindowStyle } from "../lib/settings";
+import type { Settings, TabSize, UnfocusedMode, WindowBorder, WindowStyle } from "../lib/settings";
 
 export type PanelTab = "style" | "code" | "export";
 
-const PATTERN_IDS = ["dots", "blueprint", "grid", "diagonal"];
+const PATTERN_IDS = ["dots", "blueprint", "grid", "diagonal", "polka", "crosshatch"];
 const GRADIENT_BACKGROUNDS = BACKGROUNDS.filter((bg) => !PATTERN_IDS.includes(bg.id));
+const PATTERN_BACKGROUNDS = BACKGROUNDS.filter((bg) => PATTERN_IDS.includes(bg.id));
 const TAB_OPTIONS: TabSize[] = [2, 4, 8];
 
 interface Props {
@@ -66,6 +68,7 @@ interface Props {
   onSettings: (patch: Partial<Settings>) => void;
   lineInputs: LineInputs;
   onLineInputs: (patch: Partial<LineInputs>) => void;
+  onClearAnnotations: () => void;
   photo: BackgroundPhoto | null;
   onPickPhoto: (file: File) => void;
   onRemovePhoto: () => void;
@@ -75,10 +78,6 @@ interface Props {
   onDeleteLibrary: (id: string) => void;
   onClearLocalData: () => void;
   onReset: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   onShuffle: () => void;
   onSample: () => void;
   onFile: (file: File) => void;
@@ -191,7 +190,15 @@ export default function ControlPanel(p: Props) {
   const [libraryName, setLibraryName] = useState("");
 
   const backgroundMode =
-    s.bgId === "solid" ? "solid" : s.bgId === "transparent" ? "none" : s.bgId === "photo" ? "photo" : "gradient";
+    s.bgId === "solid"
+      ? "solid"
+      : s.bgId === "transparent"
+        ? "none"
+        : s.bgId === "photo"
+          ? "photo"
+          : PATTERN_IDS.includes(s.bgId)
+            ? "pattern"
+            : "gradient";
   const backgroundName =
     BACKGROUNDS.find((bg) => bg.id === s.bgId)?.name ??
     ({ custom: "Custom", photo: "Photo", solid: "Solid", transparent: "None" } as Record<string, string>)[s.bgId] ??
@@ -207,6 +214,9 @@ export default function ControlPanel(p: Props) {
     SHADOWS.findIndex((shadow) => shadow.id === s.shadowId),
   );
   const hasCode = p.code.trim().length > 0;
+  const hasAnnotations = Boolean(
+    p.lineInputs.highlightSpec.trim() || p.lineInputs.addedSpec.trim() || p.lineInputs.removedSpec.trim(),
+  );
 
   const tabs = [
     { id: "style", name: "Style", icon: Palette },
@@ -245,29 +255,9 @@ export default function ControlPanel(p: Props) {
     <aside className="control-panel" aria-label="Snippet settings">
       <div className="panel-heading">
         <h2>Make it yours</h2>
-        <div className="panel-heading-actions">
-          <button
-            className="icon-button"
-            title="Undo style change (Ctrl/Cmd + Z)"
-            aria-label="Undo style change"
-            disabled={!p.canUndo}
-            onClick={p.onUndo}
-          >
-            <Undo2 size={15} />
-          </button>
-          <button
-            className="icon-button"
-            title="Redo style change (Ctrl/Cmd + Shift + Z)"
-            aria-label="Redo style change"
-            disabled={!p.canRedo}
-            onClick={p.onRedo}
-          >
-            <Redo2 size={15} />
-          </button>
-          <button className="icon-button" title="Reset styling" aria-label="Reset styling" onClick={p.onReset}>
-            <RotateCcw size={15} />
-          </button>
-        </div>
+        <button className="icon-button" title="Reset styling" aria-label="Reset styling" onClick={p.onReset}>
+          <RotateCcw size={15} />
+        </button>
       </div>
       <div className="panel-tabs" role="tablist" aria-label="Editor controls">
         {tabs.map((tab, index) => (
@@ -346,10 +336,11 @@ export default function ControlPanel(p: Props) {
                 <h3>Background</h3>
                 <span>{backgroundName}</span>
               </div>
-              <div className="segmented background-modes four" role="group" aria-label="Background type">
+              <div className="segmented background-modes five" role="group" aria-label="Background type">
                 {(
                   [
                     ["gradient", "Gradient"],
+                    ["pattern", "Pattern"],
                     ["solid", "Solid"],
                     ["photo", "Photo"],
                     ["none", "None"],
@@ -361,6 +352,7 @@ export default function ControlPanel(p: Props) {
                     aria-pressed={backgroundMode === mode}
                     onClick={() => {
                       if (mode === "gradient") p.onSettings({ bgId: GRADIENT_BACKGROUNDS[0].id });
+                      else if (mode === "pattern") p.onSettings({ bgId: PATTERN_BACKGROUNDS[0].id });
                       else if (mode === "solid") p.onSettings({ bgId: "solid" });
                       else if (mode === "photo") choosePhotoMode();
                       else p.onSettings({ bgId: "transparent" });
@@ -431,6 +423,23 @@ export default function ControlPanel(p: Props) {
                     </div>
                   )}
                 </>
+              )}
+
+              {backgroundMode === "pattern" && (
+                <div className="pattern-grid">
+                  {PATTERN_BACKGROUNDS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      type="button"
+                      className={`pattern-card ${s.bgId === bg.id ? "selected" : ""}`}
+                      aria-pressed={s.bgId === bg.id}
+                      onClick={() => p.onSettings({ bgId: bg.id })}
+                    >
+                      <span className="pattern-swatch" style={bg.style} />
+                      <span>{bg.name}</span>
+                    </button>
+                  ))}
+                </div>
               )}
 
               {backgroundMode === "solid" && (
@@ -606,6 +615,65 @@ export default function ControlPanel(p: Props) {
               />
             </section>
 
+            <section className="control-group highlight-quick-group" aria-label="Line highlighting">
+              <div className="group-label">
+                <h3>
+                  <Focus size={12} /> Line highlight
+                </h3>
+                {hasAnnotations ? (
+                  <button type="button" className="text-button" onClick={p.onClearAnnotations}>
+                    Clear
+                  </button>
+                ) : (
+                  <span>Click preview lines</span>
+                )}
+              </div>
+              <div className="highlight-bar-row">
+                <input
+                  aria-label="Highlight lines"
+                  value={p.lineInputs.highlightSpec}
+                  onChange={(e) => p.onLineInputs({ highlightSpec: e.target.value })}
+                  placeholder="e.g. 2, 5-7"
+                  maxLength={120}
+                />
+                <div className="highlight-swatches" role="group" aria-label="Highlight color">
+                  {HIGHLIGHT_COLORS.map((color) => (
+                    <button
+                      key={color.id}
+                      type="button"
+                      className={`hl-swatch ${s.highlightColor === color.id ? "selected" : ""}`}
+                      aria-label={`${color.name} highlight`}
+                      title={color.name}
+                      aria-pressed={s.highlightColor === color.id}
+                      style={{ background: color.swatch }}
+                      onClick={() => p.onSettings({ highlightColor: color.id })}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="highlight-focus-row">
+                <Toggle
+                  label="Dim / blur other lines"
+                  checked={p.lineInputs.dimUnfocused}
+                  onChange={(dimUnfocused) => p.onLineInputs({ dimUnfocused })}
+                />
+                {p.lineInputs.dimUnfocused && (
+                  <div className="segmented mini-seg" role="group" aria-label="Unfocused style">
+                    {(["dim", "blur"] as UnfocusedMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        className={s.unfocusedMode === mode ? "selected" : ""}
+                        aria-pressed={s.unfocusedMode === mode}
+                        onClick={() => p.onSettings({ unfocusedMode: mode })}
+                      >
+                        {mode === "dim" ? "Dim" : "Blur"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section className="control-group toggle-group" aria-label="Window appearance">
               <Toggle
                 label="Window controls"
@@ -650,16 +718,16 @@ export default function ControlPanel(p: Props) {
                   </SelectField>
                 </div>
                 <SelectField
-                  label="Pattern"
-                  id="pattern-background"
-                  value={PATTERN_IDS.includes(s.bgId) ? s.bgId : ""}
-                  onChange={(bgId) => p.onSettings({ bgId: bgId || GRADIENT_BACKGROUNDS[0].id })}
+                  label="Window width"
+                  id="window-width"
+                  value={s.windowWidth}
+                  onChange={(windowWidth) => p.onSettings({ windowWidth: windowWidth as WindowWidthId })}
                 >
-                  <option value="">No pattern</option>
-                  <option value="dots">Starfield</option>
-                  <option value="blueprint">Blueprint</option>
-                  <option value="grid">Studio grid</option>
-                  <option value="diagonal">Diagonal</option>
+                  {WINDOW_WIDTHS.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
                 </SelectField>
                 <RangeField
                   label="Line height"
@@ -694,7 +762,7 @@ export default function ControlPanel(p: Props) {
                     type="number"
                     aria-label="Starting line number"
                     min={1}
-                    max={9999}
+                    max={50000}
                     value={s.lineStart}
                     onChange={(e) => p.onSettings({ lineStart: Number(e.target.value) })}
                   />
@@ -717,6 +785,18 @@ export default function ControlPanel(p: Props) {
                     onChange={(showWatermark) => p.onSettings({ showWatermark })}
                   />
                 </div>
+                {s.showWatermark && (
+                  <label className="field">
+                    <span className="field-label">Watermark text</span>
+                    <input
+                      aria-label="Watermark text"
+                      value={s.watermarkText}
+                      maxLength={36}
+                      placeholder="made with snapcode."
+                      onChange={(e) => p.onSettings({ watermarkText: e.target.value })}
+                    />
+                  </label>
+                )}
                 <div className="preset-io">
                   <button type="button" className="secondary-button" onClick={p.onCopyStyleJson}>
                     <Copy size={13} /> Copy style JSON
@@ -779,14 +859,14 @@ export default function ControlPanel(p: Props) {
                   MAX_CODE_CHARS
                 ) {
                   e.preventDefault();
-                  p.onNotice("Please keep snippets under 100,000 characters.", true);
+                  p.onNotice(`Please keep snippets under ${MAX_CODE_CHARS.toLocaleString()} characters.`, true);
                 }
               }}
               placeholder="// Paste something worth sharing..."
               aria-describedby="editor-help"
             />
             <div className="editor-count">
-              <span>{p.code ? p.code.split("\n").length : 0} lines</span>
+              <span>{p.code ? p.code.split("\n").length.toLocaleString() : 0} lines</span>
               <span>{p.code.length.toLocaleString()} characters</span>
             </div>
             <div className="editor-actions">
@@ -829,7 +909,13 @@ export default function ControlPanel(p: Props) {
                 <h3>
                   <Focus size={12} /> Highlights &amp; diff
                 </h3>
-                <span>e.g. 2, 4-6</span>
+                {hasAnnotations ? (
+                  <button type="button" className="text-button" onClick={p.onClearAnnotations}>
+                    Clear all
+                  </button>
+                ) : (
+                  <span>e.g. 2, 4-6</span>
+                )}
               </div>
               <label className="field">
                 <span className="field-label">Focus lines</span>

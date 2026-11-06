@@ -244,7 +244,7 @@ export default function StudioDialog({ name, onClose, onPreset, onShare, onImpor
           <div>
             <h3>Find your signature style</h3>
             <p>
-              Switch between 25 dark and light themes, 15 coding fonts, custom gradients, window chrome, and aspect
+              Switch between 32 dark and light themes, 17 coding fonts, custom gradients, window chrome, and aspect
               ratios. Toggle Dark/Light studio mode from the top bar anytime.
             </p>
           </div>

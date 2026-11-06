@@ -1,11 +1,16 @@
 import { memo, useLayoutEffect, useMemo, useRef, type CSSProperties, type RefObject } from "react";
 import { Minus, Square, Terminal, X } from "lucide-react";
-import { FRAMES, type EditorTheme, type FontOption } from "../lib/data";
+import { FRAMES, HIGHLIGHT_COLORS, WINDOW_WIDTHS, type EditorTheme, type FontOption } from "../lib/data";
 import { highlightCodeLines } from "../lib/highlight";
 import { buildRows, type LineAnnotations } from "../lib/rows";
 import type { Settings } from "../lib/settings";
 
 const PLACEHOLDER = "// Your next great idea starts here.";
+
+export interface LineClickModifiers {
+  shiftKey: boolean;
+  altKey: boolean;
+}
 
 interface Props {
   code: string;
@@ -17,6 +22,7 @@ interface Props {
   font: FontOption;
   settings: Settings;
   annotations: LineAnnotations;
+  onLineClick?: (lineNumber: number, modifiers: LineClickModifiers) => void;
   shadowCss: string;
   bgStyle: CSSProperties;
   photoUrl: string | null;
@@ -37,13 +43,17 @@ export default memo(function CodePreview({
   font,
   settings: s,
   annotations,
+  onLineClick,
   shadowCss,
   bgStyle,
   photoUrl,
   exportRef,
 }: Props) {
   const lines = useMemo(() => highlightCodeLines(code || PLACEHOLDER, language), [code, language]);
-  const rows = useMemo(() => buildRows(lines, s.lineStart, annotations), [lines, s.lineStart, annotations]);
+  const allRows = useMemo(() => buildRows(lines, s.lineStart, annotations), [lines, s.lineStart, annotations]);
+  const MAX_RENDERED_ROWS = 1_200;
+  const rows = allRows.length > MAX_RENDERED_ROWS ? allRows.slice(0, MAX_RENDERED_ROWS) : allRows;
+  const truncatedRowCount = allRows.length - rows.length;
   const lineHeight = Math.round(s.fontSize * s.lineHeight);
   const gutterDigits = String(s.lineStart + lines.length - 1).length;
 
@@ -51,6 +61,10 @@ export default memo(function CodePreview({
   const frameWidth = frame?.width ?? 0;
   const frameHeight = frame?.height ?? 0;
   const framed = frameWidth > 0 && frameHeight > 0;
+
+  const hlColor = HIGHLIGHT_COLORS.find((item) => item.id === s.highlightColor) ?? HIGHLIGHT_COLORS[0];
+  const explicitWidth = WINDOW_WIDTHS.find((item) => item.id === s.windowWidth)?.px ?? null;
+  const resolvedWindowWidth = explicitWidth ?? (s.wrapLines ? 760 : null);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef<HTMLDivElement>(null);
@@ -90,6 +104,8 @@ export default memo(function CodePreview({
     "--tok-attr": theme.attr,
     "--tok-tag": theme.tag,
     "--tok-operator": theme.operator,
+    "--hl-bg": theme.dark ? hlColor.darkBg : hlColor.lightBg,
+    "--hl-bar": hlColor.bar,
   } as CSSProperties;
 
   const borderStyle: CSSProperties = (() => {
@@ -173,7 +189,7 @@ export default memo(function CodePreview({
             borderRadius: s.radius,
             boxShadow: shadowCss,
             ...borderStyle,
-            ...(s.wrapLines ? { width: 760 } : {}),
+            ...(resolvedWindowWidth ? { width: resolvedWindowWidth, minWidth: resolvedWindowWidth } : {}),
           }}
         >
           {s.showHeader && (
@@ -232,17 +248,18 @@ export default memo(function CodePreview({
                   if (row.kind === "gap") {
                     return (
                       <div key={`gap-${index}`} className="code-line is-gap" style={{ height: lineHeight }}>
-                        {s.showLineNumbers && <span className="gutter" aria-hidden="true" />}
+                        {s.showLineNumbers && <span className="gutter line-numbers" aria-hidden="true" />}
                         <span className="cell">⋯</span>
                       </div>
                     );
                   }
                   const classes = [
                     "code-line",
+                    onLineClick && "is-interactive",
                     row.added && "is-added",
                     row.removed && "is-removed",
                     row.highlighted && "is-highlighted",
-                    row.dimmed && "is-dimmed",
+                    row.dimmed && (s.unfocusedMode === "blur" ? "is-blurred" : "is-dimmed"),
                   ]
                     .filter(Boolean)
                     .join(" ");
@@ -251,6 +268,19 @@ export default memo(function CodePreview({
                       key={row.n}
                       className={classes}
                       style={s.wrapLines ? { minHeight: lineHeight } : { height: lineHeight }}
+                      title={
+                        onLineClick
+                          ? `Line ${row.n}: Click to highlight · Shift+Click for range · Alt+Click for + / - diff`
+                          : undefined
+                      }
+                      onClick={
+                        onLineClick
+                          ? (e) => {
+                              e.stopPropagation();
+                              onLineClick(row.n, { shiftKey: e.shiftKey, altKey: e.altKey });
+                            }
+                          : undefined
+                      }
                     >
                       {s.showLineNumbers && (
                         <span className="gutter line-numbers" aria-hidden="true" style={{ color: theme.lineNumber }}>
@@ -262,13 +292,22 @@ export default memo(function CodePreview({
                     </div>
                   );
                 })}
+                {truncatedRowCount > 0 && (
+                  <div className="code-line is-gap" style={{ height: lineHeight }}>
+                    {s.showLineNumbers && <span className="gutter line-numbers" aria-hidden="true" />}
+                    <span className="cell">
+                      ⋯ {truncatedRowCount.toLocaleString()} more lines (use Focus Mode or Starting Line # to frame any
+                      section)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {s.showWatermark && <span className="canvas-watermark">made with snapcode.</span>}
+      {s.showWatermark && <span className="canvas-watermark">{s.watermarkText || "made with snapcode."}</span>}
     </div>
   );
 });

@@ -11,11 +11,11 @@ const NAME_TO_LANG: Record<string, string> = {
  * Reads a text file for the editor. Rejects oversized and binary files explicitly; never truncates silently.
  */
 export async function readCodeFile(file: File) {
-  if (file.size > MAX_FILE_BYTES) throw new Error("Please choose a text file smaller than 1 MB.");
+  if (file.size > MAX_FILE_BYTES) throw new Error("Please choose a text file smaller than 5 MB.");
   const code = (await file.text()).replace(/\r\n?/g, "\n");
   if (code.includes("\u0000")) throw new Error("That looks like a binary file. Please choose a code or text file.");
   if (code.length > MAX_CODE_CHARS) {
-    throw new Error("This snippet exceeds 100,000 characters. Please use a smaller file.");
+    throw new Error("This snippet exceeds 500,000 characters. Please use a smaller file.");
   }
 
   const name = file.name.trim().toLowerCase();

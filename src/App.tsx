@@ -20,15 +20,17 @@ import {
   Moon,
   MousePointer2,
   Pencil,
+  Redo2,
   Share2,
   ShieldCheck,
   Sparkles,
   Sun,
+  Undo2,
   Upload,
   X,
 } from "lucide-react";
 import Brand from "./components/Brand";
-import CodePreview from "./components/CodePreview";
+import CodePreview, { type LineClickModifiers } from "./components/CodePreview";
 import ControlPanel, { type PanelTab } from "./components/ControlPanel";
 import StudioDialog, { type DialogName } from "./components/StudioDialog";
 import {
@@ -40,12 +42,11 @@ import {
   MAX_CODE_CHARS,
   SAMPLES,
   SHADOWS,
-  STYLE_PRESETS,
   THEMES,
   type StylePreset,
 } from "./lib/data";
 import { detectLanguage } from "./lib/highlight";
-import { formatCodeSnippet, parseLineSpec } from "./lib/lines";
+import { addRangeToSpec, formatCodeSnippet, parseLineSpec, removeLineFromSpec, toggleLineInSpec } from "./lib/lines";
 import { downloadBlob, imageFilename, renderImage } from "./lib/export";
 import { readCodeFile } from "./lib/files";
 import { preparePhoto, type BackgroundPhoto } from "./lib/photo";
@@ -60,7 +61,6 @@ import {
   type LibraryItem,
 } from "./lib/library";
 import { buildShareUrl, decodeShare, encodeShare, readShareToken } from "./lib/share";
-import { commit, createHistory, isEditableTarget, redo, undo, type History } from "./lib/history";
 import { usePwa } from "./hooks/usePwa";
 
 const DEFAULT_BG_ID = "aurora";
@@ -75,12 +75,7 @@ export default function App() {
   const [code, setCode] = useState(SAMPLES.javascript);
   const [language, setLanguage] = useState("javascript");
   const [title, setTitle] = useState("hello-world.js");
-  const [history, setHistory] = useState<History<Settings>>(() => createHistory(loadSettings()));
-  const settings = history.present;
-  const setSettings = useCallback(
-    (next: Settings) => setHistory((current) => commit(current, sanitizeSettings(next), Date.now())),
-    [],
-  );
+  const [settings, setSettings] = useState<Settings>(loadSettings);
   const [lineInputs, setLineInputs] = useState<LineInputs>(EMPTY_LINE_INPUTS);
   const [photo, setPhoto] = useState<BackgroundPhoto | null>(null);
   const [library, setLibrary] = useState<LibraryItem[]>(() => loadLibrary());
@@ -98,7 +93,58 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLElement>(null);
   const exportLock = useRef(false);
+  const lastClickedLineRef = useRef<number | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  interface Snapshot {
+    code: string;
+    language: string;
+    title: string;
+    settings: Settings;
+    lineInputs: LineInputs;
+  }
+  const notify = useCallback((message: string, error = false) => {
+    clearTimeout(noticeTimer.current);
+    setNotice({ message, error });
+    noticeTimer.current = setTimeout(() => setNotice(null), error ? 6000 : 3500);
+  }, []);
+  useEffect(() => () => clearTimeout(noticeTimer.current), []);
+
+  const undoStack = useRef<Snapshot[]>([]);
+  const redoStack = useRef<Snapshot[]>([]);
+  const [, setHistoryTick] = useState(0);
+
+  const pushHistory = useCallback(() => {
+    undoStack.current = [...undoStack.current.slice(-29), { code, language, title, settings, lineInputs }];
+    redoStack.current = [];
+    setHistoryTick((n) => n + 1);
+  }, [code, language, title, settings, lineInputs]);
+
+  const handleUndo = useCallback(() => {
+    const prev = undoStack.current.pop();
+    if (!prev) return;
+    redoStack.current.push({ code, language, title, settings, lineInputs });
+    setCode(prev.code);
+    setLanguage(prev.language);
+    setTitle(prev.title);
+    setSettings(prev.settings);
+    setLineInputs(prev.lineInputs);
+    setHistoryTick((n) => n + 1);
+    notify("Undid last change.");
+  }, [code, language, title, settings, lineInputs, notify]);
+
+  const handleRedo = useCallback(() => {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push({ code, language, title, settings, lineInputs });
+    setCode(next.code);
+    setLanguage(next.language);
+    setTitle(next.title);
+    setSettings(next.settings);
+    setLineInputs(next.lineInputs);
+    setHistoryTick((n) => n + 1);
+    notify("Redid change.");
+  }, [code, language, title, settings, lineInputs, notify]);
   const pwa = usePwa();
   const previewCode = useDeferredValue(code);
 
@@ -151,13 +197,6 @@ export default function App() {
   const hasCode = code.trim().length > 0;
   const canExport = hasCode && !exporting && code === previewCode;
 
-  const notify = useCallback((message: string, error = false) => {
-    clearTimeout(noticeTimer.current);
-    setNotice({ message, error });
-    noticeTimer.current = setTimeout(() => setNotice(null), error ? 6000 : 3500);
-  }, []);
-  useEffect(() => () => clearTimeout(noticeTimer.current), []);
-
   useEffect(() => {
     const timer = setTimeout(() => saveSettings(settings), 200);
     return () => clearTimeout(timer);
@@ -194,21 +233,83 @@ export default function App() {
       .catch((error: unknown) =>
         notify(error instanceof Error ? error.message : "This share link could not be opened.", true),
       );
-  }, [notify, setSettings]);
+  }, [notify]);
 
-  // Rapid edits (slider drags, typing a number) within 500 ms become a single undo step.
   const patch = useCallback(
-    (next: Partial<Settings>) =>
-      setHistory((current) => commit(current, sanitizeSettings({ ...current.present, ...next }), Date.now(), 500)),
-    [],
+    (next: Partial<Settings>) => {
+      pushHistory();
+      setSettings((current) => sanitizeSettings({ ...current, ...next }));
+    },
+    [pushHistory],
   );
-  const undoStyle = useCallback(() => setHistory((current) => undo(current)), []);
-  const redoStyle = useCallback(() => setHistory((current) => redo(current)), []);
-  const canUndo = history.past.length > 0;
-  const canRedo = history.future.length > 0;
   const patchLineInputs = useCallback(
-    (next: Partial<LineInputs>) => setLineInputs((current) => ({ ...current, ...next })),
-    [],
+    (next: Partial<LineInputs>) => {
+      pushHistory();
+      setLineInputs((current) => ({ ...current, ...next }));
+    },
+    [pushHistory],
+  );
+  const clearAnnotations = useCallback(() => {
+    pushHistory();
+    setLineInputs(EMPTY_LINE_INPUTS);
+    lastClickedLineRef.current = null;
+    notify("Line highlights cleared.");
+  }, [pushHistory, notify]);
+
+  const handlePreviewLineClick = useCallback(
+    (lineNumber: number, modifiers: LineClickModifiers) => {
+      pushHistory();
+      if (modifiers.altKey) {
+        setLineInputs((current) => {
+          const isHl = parseLineSpec(current.highlightSpec).has(lineNumber);
+          const isAdd = parseLineSpec(current.addedSpec).has(lineNumber);
+          const isRem = parseLineSpec(current.removedSpec).has(lineNumber);
+          if (isHl) {
+            return {
+              ...current,
+              highlightSpec: removeLineFromSpec(current.highlightSpec, lineNumber),
+              addedSpec: toggleLineInSpec(current.addedSpec, lineNumber),
+            };
+          }
+          if (isAdd) {
+            return {
+              ...current,
+              addedSpec: removeLineFromSpec(current.addedSpec, lineNumber),
+              removedSpec: toggleLineInSpec(current.removedSpec, lineNumber),
+            };
+          }
+          if (isRem) {
+            return {
+              ...current,
+              removedSpec: removeLineFromSpec(current.removedSpec, lineNumber),
+            };
+          }
+          return {
+            ...current,
+            highlightSpec: toggleLineInSpec(current.highlightSpec, lineNumber),
+          };
+        });
+        lastClickedLineRef.current = lineNumber;
+        return;
+      }
+
+      if (modifiers.shiftKey && lastClickedLineRef.current !== null) {
+        const anchor = lastClickedLineRef.current;
+        setLineInputs((current) => ({
+          ...current,
+          highlightSpec: addRangeToSpec(current.highlightSpec, anchor, lineNumber),
+        }));
+        lastClickedLineRef.current = lineNumber;
+        return;
+      }
+
+      setLineInputs((current) => ({
+        ...current,
+        highlightSpec: toggleLineInSpec(current.highlightSpec, lineNumber),
+      }));
+      lastClickedLineRef.current = lineNumber;
+    },
+    [pushHistory],
   );
 
   const editCode = useCallback(() => {
@@ -278,10 +379,23 @@ export default function App() {
   };
 
   const shuffle = () => {
-    const candidates = STYLE_PRESETS.filter(
-      (preset) => preset.theme !== settings.themeId || preset.bg !== settings.bgId,
+    const pick = <T,>(items: readonly T[]): T => items[Math.floor(Math.random() * items.length)];
+    const candidateThemes = THEMES.filter((item) => item.id !== settings.themeId);
+    const nextTheme = pick(candidateThemes.length > 0 ? candidateThemes : THEMES);
+    const lightBackgroundIds = new Set(["porcelain", "warm-sand", "peach", "honey", "mint-breeze", "grid", "polka"]);
+    const matchingBackgrounds = BACKGROUNDS.filter((bg) =>
+      nextTheme.dark ? !lightBackgroundIds.has(bg.id) : lightBackgroundIds.has(bg.id),
     );
-    applyPreset(candidates[Math.floor(Math.random() * candidates.length)]);
+    const nextBg = pick(matchingBackgrounds.length > 0 ? matchingBackgrounds : BACKGROUNDS);
+    const nextFont = pick(FONTS);
+    const nextShadow = pick(SHADOWS.slice(1));
+    patch({
+      themeId: nextTheme.id,
+      bgId: nextBg.id,
+      fontId: nextFont.id,
+      shadowId: nextShadow.id,
+    });
+    notify(`${nextTheme.name} + ${nextBg.name}. Fresh look.`);
   };
 
   const pickPhoto = async (file: File) => {
@@ -495,25 +609,28 @@ export default function App() {
     const onKey = (event: KeyboardEvent) => {
       if (!dialog && (event.ctrlKey || event.metaKey)) {
         const key = event.key.toLowerCase();
-        if ((key === "z" || key === "y") && !isEditableTarget(event.target)) {
-          event.preventDefault();
-          if (key === "y" || event.shiftKey) redoStyle();
-          else undoStyle();
-          return;
-        }
-        if (event.key.toLowerCase() === "s") {
+        const inField =
+          event.target instanceof HTMLTextAreaElement ||
+          (event.target instanceof HTMLInputElement && event.target.type !== "range" && event.target.type !== "radio");
+        if (key === "s") {
           event.preventDefault();
           void performExport("download");
-        }
-        if (event.key.toLowerCase() === "e") {
+        } else if (key === "e") {
           event.preventDefault();
           editCode();
+        } else if (key === "z" && !inField) {
+          event.preventDefault();
+          if (event.shiftKey) handleRedo();
+          else handleUndo();
+        } else if (key === "y" && !inField) {
+          event.preventDefault();
+          handleRedo();
         }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [performExport, editCode, dialog, undoStyle, redoStyle]);
+  }, [performExport, editCode, handleUndo, handleRedo, dialog]);
 
   const toggleFullscreen = async () => {
     try {
@@ -569,6 +686,28 @@ export default function App() {
             </button>
           </nav>
           <div className="header-actions">
+            <div className="history-buttons" role="group" aria-label="History">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Undo"
+                title="Undo (Ctrl / Cmd + Z)"
+                disabled={undoStack.current.length === 0}
+                onClick={handleUndo}
+              >
+                <Undo2 size={15} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Redo"
+                title="Redo (Ctrl / Cmd + Shift + Z)"
+                disabled={redoStack.current.length === 0}
+                onClick={handleRedo}
+              >
+                <Redo2 size={15} />
+              </button>
+            </div>
             <button
               type="button"
               className="icon-button ui-theme-button"
@@ -640,6 +779,7 @@ export default function App() {
               onSettings={patch}
               lineInputs={lineInputs}
               onLineInputs={patchLineInputs}
+              onClearAnnotations={clearAnnotations}
               photo={photo}
               onPickPhoto={(file) => void pickPhoto(file)}
               onRemovePhoto={removePhoto}
@@ -648,10 +788,6 @@ export default function App() {
               onLoadLibrary={loadSnippet}
               onDeleteLibrary={deleteSnippet}
               onClearLocalData={clearLocalData}
-              onUndo={undoStyle}
-              onRedo={redoStyle}
-              canUndo={canUndo}
-              canRedo={canRedo}
               onReset={() => {
                 setSettings({ ...DEFAULT_SETTINGS, uiTheme: settings.uiTheme });
                 setLineInputs(EMPTY_LINE_INPUTS);
@@ -750,6 +886,7 @@ export default function App() {
                         font={font}
                         settings={settings}
                         annotations={annotations}
+                        onLineClick={handlePreviewLineClick}
                         shadowCss={shadow}
                         bgStyle={bgStyle}
                         photoUrl={photoUrl}

@@ -491,10 +491,10 @@ export const DEFAULT_TITLES: Record<string, string> = {
   makefile: "Makefile",
 };
 
-/** Maximum characters accepted from a loaded file (keeps rendering fast). */
-export const MAX_CODE_CHARS = 100_000;
-/** Maximum file size (bytes) accepted via Open / drag & drop. */
-export const MAX_FILE_BYTES = 1_000_000;
+/** Maximum characters accepted in the editor or from a loaded file. */
+export const MAX_CODE_CHARS = 500_000;
+/** Maximum file size (bytes) accepted via Open / drag & drop (5 MB). */
+export const MAX_FILE_BYTES = 5_000_000;
 
 export interface FontOption {
   id: string;
@@ -518,9 +518,8 @@ export const FONTS: FontOption[] = [
   { id: "red-hat", name: "Red Hat Mono", family: "'Red Hat Mono', monospace" },
   { id: "azeret", name: "Azeret Mono", family: "'Azeret Mono', monospace" },
   { id: "dm-mono", name: "DM Mono", family: "'DM Mono', monospace" },
-  { id: "intel-one", name: "Intel One Mono", family: "'Intel One Mono', monospace" },
-  { id: "commit-mono", name: "Commit Mono", family: "'Commit Mono', monospace" },
-  { id: "fragment-mono", name: "Fragment Mono", family: "'Fragment Mono', monospace" },
+  { id: "anonymous", name: "Anonymous Pro", family: "'Anonymous Pro', monospace" },
+  { id: "overpass", name: "Overpass Mono", family: "'Overpass Mono', monospace" },
 ];
 
 export interface EditorTheme {
@@ -928,70 +927,112 @@ export const THEMES: EditorTheme[] = [
   },
 
   {
-    id: "poimandres",
-    name: "Poimandres",
+    id: "ayu-dark",
+    name: "Ayu Dark",
     dark: true,
-    bg: "#1B1E28",
-    header: "#171922",
-    border: "rgba(166,172,205,0.14)",
-    text: "#A6ACCD",
-    lineNumber: "#8186A5",
-    keyword: "#91B4D5",
-    string: "#5DE4C7",
-    comment: "#8186A5",
-    number: "#5DE4C7",
-    fn: "#ADD7FF",
-    variable: "#E4F0FB",
-    builtin: "#89DDFF",
-    type: "#FFFAC2",
-    attr: "#ADD7FF",
-    tag: "#5DE4C7",
-    operator: "#91B4D5",
+    bg: "#0B0E14",
+    header: "#0F131A",
+    border: "rgba(191,189,182,0.14)",
+    text: "#BFBDB6",
+    lineNumber: "#787E8A",
+    keyword: "#FF8F40",
+    string: "#AAD94C",
+    comment: "#787E8A",
+    number: "#D2A6FF",
+    fn: "#FFB454",
+    variable: "#BFBDB6",
+    builtin: "#39BAE6",
+    type: "#59C2FF",
+    attr: "#FFB454",
+    tag: "#39BAE6",
+    operator: "#F29668",
   },
   {
     id: "palenight",
     name: "Material Palenight",
     dark: true,
     bg: "#292D3E",
-    header: "#232635",
-    border: "rgba(186,190,216,0.14)",
-    text: "#BABED8",
+    header: "#232736",
+    border: "rgba(166,172,205,0.14)",
+    text: "#A6ACCD",
     lineNumber: "#9297B3",
     keyword: "#C792EA",
     string: "#C3E88D",
     comment: "#9297B3",
     number: "#F78C6C",
     fn: "#82AAFF",
-    variable: "#F07178",
-    builtin: "#FFCB6B",
+    variable: "#EEFFFF",
+    builtin: "#89DDFF",
     type: "#FFCB6B",
-    attr: "#F07178",
+    attr: "#FFCB6B",
     tag: "#F07178",
     operator: "#89DDFF",
   },
   {
-    id: "ayu-mirage",
-    name: "Ayu Mirage",
+    id: "shades-of-purple",
+    name: "Shades of Purple",
     dark: true,
-    bg: "#242936",
-    header: "#1F2430",
-    border: "rgba(204,202,194,0.12)",
-    text: "#CCCAC2",
-    lineNumber: "#939FB0",
-    keyword: "#FFAD66",
-    string: "#D5FF80",
-    comment: "#939FB0",
-    number: "#DFBFFF",
-    fn: "#FFD173",
-    variable: "#CCCAC2",
-    builtin: "#5CCFE6",
-    type: "#73D0FF",
-    attr: "#FFDFB3",
-    tag: "#5CCFE6",
-    operator: "#F29E74",
+    bg: "#2D2B55",
+    header: "#222044",
+    border: "rgba(227,223,255,0.16)",
+    text: "#E3DFFF",
+    lineNumber: "#A599E9",
+    keyword: "#FF9D00",
+    string: "#A5FF90",
+    comment: "#BF7BFF",
+    number: "#FF628C",
+    fn: "#FAD000",
+    variable: "#E3DFFF",
+    builtin: "#80FCFF",
+    type: "#9EFFFF",
+    attr: "#FAD000",
+    tag: "#9EFFFF",
+    operator: "#FF9D00",
+  },
+  {
+    id: "cobalt2",
+    name: "Cobalt2",
+    dark: true,
+    bg: "#193549",
+    header: "#122738",
+    border: "rgba(255,255,255,0.15)",
+    text: "#FFFFFF",
+    lineNumber: "#76A2C2",
+    keyword: "#FF9D00",
+    string: "#3AD900",
+    comment: "#38A2FF",
+    number: "#FF6B93",
+    fn: "#FFC600",
+    variable: "#FFFFFF",
+    builtin: "#80FFBB",
+    type: "#80FFBB",
+    attr: "#FFC600",
+    tag: "#9EFFFF",
+    operator: "#FF9D00",
+  },
+  {
+    id: "horizon",
+    name: "Horizon Dark",
+    dark: true,
+    bg: "#1C1E26",
+    header: "#161820",
+    border: "rgba(224,224,224,0.12)",
+    text: "#E0E0E0",
+    lineNumber: "#8486A4",
+    keyword: "#B877DB",
+    string: "#FAB795",
+    comment: "#8486A4",
+    number: "#F09383",
+    fn: "#25B2BC",
+    variable: "#E95678",
+    builtin: "#25B2BC",
+    type: "#FAC29A",
+    attr: "#F09383",
+    tag: "#E95678",
+    operator: "#B877DB",
   },
 
-  /* ---------- Light Themes (7) ---------- */
+  /* ---------- Light Themes (9) ---------- */
   {
     id: "github-light",
     name: "GitHub Light",
@@ -1138,6 +1179,48 @@ export const THEMES: EditorTheme[] = [
     attr: "#965E06",
     tag: "#BA520D",
     operator: "#B34B17",
+  },
+  {
+    id: "modus-operandi",
+    name: "Modus Operandi",
+    dark: false,
+    bg: "#FFFFFF",
+    header: "#F2F2F2",
+    border: "rgba(0,0,0,0.14)",
+    text: "#000000",
+    lineNumber: "#595959",
+    keyword: "#531AB6",
+    string: "#3548CF",
+    comment: "#595959",
+    number: "#005F5F",
+    fn: "#721045",
+    variable: "#005E8B",
+    builtin: "#8F0075",
+    type: "#005F5F",
+    attr: "#005E8B",
+    tag: "#005E8B",
+    operator: "#000000",
+  },
+  {
+    id: "papercolor-light",
+    name: "PaperColor Light",
+    dark: false,
+    bg: "#EEEEEE",
+    header: "#E4E4E4",
+    border: "rgba(0,0,0,0.14)",
+    text: "#444444",
+    lineNumber: "#666666",
+    keyword: "#CE005B",
+    string: "#005F87",
+    comment: "#5F5F5F",
+    number: "#AC4C00",
+    fn: "#005FAF",
+    variable: "#005F00",
+    builtin: "#005FAF",
+    type: "#005F87",
+    attr: "#005FAF",
+    tag: "#005F87",
+    operator: "#CE005B",
   },
 ];
 
@@ -1290,6 +1373,26 @@ const CORE_BACKGROUNDS: BackgroundPreset[] = [
       backgroundSize: "16px 16px",
     },
   },
+  {
+    id: "polka",
+    name: "Polka Dots",
+    swatch: "#EAE6F8",
+    style: {
+      backgroundColor: "#F3F0FA",
+      backgroundImage: "radial-gradient(rgba(119,85,219,0.22) 1.5px, transparent 1.5px)",
+      backgroundSize: "18px 18px",
+    },
+  },
+  {
+    id: "crosshatch",
+    name: "Crosshatch",
+    swatch: "#064E3B",
+    style: {
+      backgroundColor: "#042F2E",
+      backgroundImage:
+        "repeating-linear-gradient(45deg, rgba(45,212,191,0.12) 0 1px, transparent 1px 14px), repeating-linear-gradient(-45deg, rgba(45,212,191,0.12) 0 1px, transparent 1px 14px)",
+    },
+  },
 ];
 
 /** Layered radial "mesh" gradients: smooth, premium-looking, and fully exportable (no images needed). */
@@ -1357,33 +1460,6 @@ export interface StylePreset {
 }
 
 export const STYLE_PRESETS: StylePreset[] = [
-  {
-    id: "poimandres-mint",
-    name: "Poimandres Mint",
-    mode: "dark",
-    theme: "poimandres",
-    bg: "mesh-lagoon",
-    font: "commit-mono",
-    shadow: "large",
-  },
-  {
-    id: "palenight-dusk",
-    name: "Palenight Dusk",
-    mode: "dark",
-    theme: "palenight",
-    bg: "mesh-violet",
-    font: "intel-one",
-    shadow: "glow",
-  },
-  {
-    id: "ayu-desert",
-    name: "Ayu Desert",
-    mode: "dark",
-    theme: "ayu-mirage",
-    bg: "mesh-ember",
-    font: "fragment-mono",
-    shadow: "medium",
-  },
   {
     id: "rose-moon",
     name: "Rosé Moon",
@@ -1501,6 +1577,107 @@ export const STYLE_PRESETS: StylePreset[] = [
     font: "martian",
     shadow: "medium",
   },
+  {
+    id: "ayu-midnight",
+    name: "Ayu Midnight",
+    mode: "dark",
+    theme: "ayu-dark",
+    bg: "mesh-ember",
+    font: "anonymous",
+    shadow: "large",
+  },
+  {
+    id: "cobalt-ocean",
+    name: "Cobalt Ocean",
+    mode: "dark",
+    theme: "cobalt2",
+    bg: "ocean",
+    font: "overpass",
+    shadow: "large",
+  },
+  {
+    id: "paper-studio",
+    name: "Paper Studio",
+    mode: "light",
+    theme: "papercolor-light",
+    bg: "polka",
+    font: "anonymous",
+    shadow: "soft",
+  },
+  {
+    id: "modus-crisp",
+    name: "Modus Crisp",
+    mode: "light",
+    theme: "modus-operandi",
+    bg: "grid",
+    font: "geist",
+    shadow: "medium",
+  },
+];
+
+export const HIGHLIGHT_COLOR_IDS = ["violet", "amber", "cyan", "emerald", "rose"] as const;
+export type HighlightColorId = (typeof HIGHLIGHT_COLOR_IDS)[number];
+
+export interface HighlightColorOption {
+  id: HighlightColorId;
+  name: string;
+  swatch: string;
+  bar: string;
+  darkBg: string;
+  lightBg: string;
+}
+
+export const HIGHLIGHT_COLORS: HighlightColorOption[] = [
+  {
+    id: "violet",
+    name: "Violet",
+    swatch: "#8B5CF6",
+    bar: "#9E7EE6",
+    darkBg: "rgba(139, 92, 246, 0.26)",
+    lightBg: "rgba(124, 58, 237, 0.14)",
+  },
+  {
+    id: "amber",
+    name: "Amber",
+    swatch: "#F59E0B",
+    bar: "#FBBF24",
+    darkBg: "rgba(245, 158, 11, 0.24)",
+    lightBg: "rgba(217, 119, 6, 0.15)",
+  },
+  {
+    id: "cyan",
+    name: "Cyan",
+    swatch: "#06B6D4",
+    bar: "#22D3EE",
+    darkBg: "rgba(6, 182, 212, 0.24)",
+    lightBg: "rgba(8, 145, 178, 0.14)",
+  },
+  {
+    id: "emerald",
+    name: "Emerald",
+    swatch: "#10B981",
+    bar: "#34D399",
+    darkBg: "rgba(16, 185, 129, 0.24)",
+    lightBg: "rgba(5, 150, 105, 0.14)",
+  },
+  {
+    id: "rose",
+    name: "Rose",
+    swatch: "#F43F5E",
+    bar: "#FB7185",
+    darkBg: "rgba(244, 63, 94, 0.24)",
+    lightBg: "rgba(225, 29, 72, 0.14)",
+  },
+];
+
+export const WINDOW_WIDTH_IDS = ["auto", "540", "760", "960"] as const;
+export type WindowWidthId = (typeof WINDOW_WIDTH_IDS)[number];
+
+export const WINDOW_WIDTHS: { id: WindowWidthId; name: string; px: number | null }[] = [
+  { id: "auto", name: "Auto fit", px: null },
+  { id: "540", name: "Compact (540px)", px: 540 },
+  { id: "760", name: "Standard (760px)", px: 760 },
+  { id: "960", name: "Wide (960px)", px: 960 },
 ];
 
 export type FrameId = "auto" | "16:9" | "1:1" | "4:5" | "og" | "story";

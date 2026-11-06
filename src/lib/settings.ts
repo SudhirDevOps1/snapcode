@@ -3,16 +3,21 @@ import {
   EXPORT_FORMAT_IDS,
   FONTS,
   FRAMES,
+  HIGHLIGHT_COLOR_IDS,
   SHADOWS,
   THEMES,
+  WINDOW_WIDTH_IDS,
   type ExportFormatId,
   type FrameId,
+  type HighlightColorId,
+  type WindowWidthId,
 } from "./data";
 import { isRecord } from "./guards";
 
 export type WindowStyle = "mac" | "mac-outline" | "win" | "terminal" | "none";
 export type WindowBorder = "subtle" | "crisp" | "glass" | "glow";
 export type UiTheme = "light" | "dark";
+export type UnfocusedMode = "dim" | "blur";
 export type TabSize = 2 | 4 | 8;
 export type ExportScale = 2 | 3 | 4;
 
@@ -27,6 +32,7 @@ export interface Settings {
   tabSize: TabSize;
   ligatures: boolean;
   wrapLines: boolean;
+  windowWidth: WindowWidthId;
   padding: number;
   radius: number;
   shadowId: string;
@@ -40,12 +46,15 @@ export interface Settings {
   grain: boolean;
   showLineNumbers: boolean;
   lineStart: number;
+  highlightColor: HighlightColorId;
+  unfocusedMode: UnfocusedMode;
   showHeader: boolean;
   showBadge: boolean;
   windowStyle: WindowStyle;
   windowBorder: WindowBorder;
   aspectRatio: FrameId;
   showWatermark: boolean;
+  watermarkText: string;
   exportScale: ExportScale;
   exportFormat: ExportFormatId;
   exportQuality: number;
@@ -63,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tabSize: 2,
   ligatures: true,
   wrapLines: false,
+  windowWidth: "auto",
   padding: 64,
   radius: 12,
   shadowId: "large",
@@ -76,12 +86,15 @@ export const DEFAULT_SETTINGS: Settings = {
   grain: false,
   showLineNumbers: true,
   lineStart: 1,
+  highlightColor: "violet",
+  unfocusedMode: "dim",
   showHeader: true,
   showBadge: false,
   windowStyle: "mac",
   windowBorder: "subtle",
   aspectRatio: "auto",
   showWatermark: false,
+  watermarkText: "made with snapcode.",
   exportScale: 2,
   exportFormat: "png",
   exportQuality: 0.92,
@@ -134,6 +147,7 @@ export function sanitizeSettings(input: unknown): Settings {
     tabSize: oneOf(raw.tabSize, [2, 4, 8] as const, d.tabSize),
     ligatures: bool(raw.ligatures, d.ligatures),
     wrapLines: bool(raw.wrapLines, d.wrapLines),
+    windowWidth: oneOf(raw.windowWidth, WINDOW_WIDTH_IDS, d.windowWidth),
     padding: clampInt(raw.padding, 0, 120, d.padding),
     radius: clampInt(raw.radius, 0, 36, d.radius),
     shadowId: oneOf(
@@ -150,7 +164,9 @@ export function sanitizeSettings(input: unknown): Settings {
     photoBlur: clampInt(raw.photoBlur, 0, 24, d.photoBlur),
     grain: bool(raw.grain, d.grain),
     showLineNumbers: bool(raw.showLineNumbers, d.showLineNumbers),
-    lineStart: clampInt(raw.lineStart, 1, 9999, d.lineStart),
+    lineStart: clampInt(raw.lineStart, 1, 50_000, d.lineStart),
+    highlightColor: oneOf(raw.highlightColor, HIGHLIGHT_COLOR_IDS, d.highlightColor),
+    unfocusedMode: oneOf(raw.unfocusedMode, ["dim", "blur"] as const, d.unfocusedMode),
     showHeader: bool(raw.showHeader, d.showHeader),
     showBadge: bool(raw.showBadge, d.showBadge),
     windowStyle: oneOf(raw.windowStyle, ["mac", "mac-outline", "win", "terminal", "none"] as const, d.windowStyle),
@@ -161,6 +177,10 @@ export function sanitizeSettings(input: unknown): Settings {
       d.aspectRatio,
     ),
     showWatermark: bool(raw.showWatermark, d.showWatermark),
+    watermarkText:
+      typeof raw.watermarkText === "string" && raw.watermarkText.trim().length > 0
+        ? raw.watermarkText.trim().slice(0, 36)
+        : d.watermarkText,
     exportScale: oneOf(raw.exportScale, [2, 3, 4] as const, d.exportScale),
     exportFormat: oneOf(raw.exportFormat, EXPORT_FORMAT_IDS, d.exportFormat),
     exportQuality: clampDecimal(raw.exportQuality, 0.5, 1, d.exportQuality, 2),

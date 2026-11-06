@@ -19,7 +19,7 @@ export const SHARE_HASH_PREFIX = "#s=";
 /** Keeps links within common chat, email, and browser URL limits. */
 export const MAX_SHARE_TOKEN_CHARS = 60_000;
 /** Decompression limit that prevents "zip bomb" style links from exhausting memory. */
-export const MAX_INFLATED_BYTES = 400_000;
+export const MAX_INFLATED_BYTES = 600_000;
 
 const LANGUAGE_IDS = new Set(["auto", ...LANGUAGES.map((language) => language.id)]);
 

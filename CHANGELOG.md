@@ -6,14 +6,12 @@ Notable changes are recorded here. Version tags follow Semantic Versioning.
 
 ### Added in studio v1.2
 
-- Undo and redo for style changes, from header buttons or Ctrl/Cmd + Z and Ctrl/Cmd + Shift + Z (Ctrl + Y). Slider drags merge into one step; history keeps 50 steps; text fields keep native undo.
-- Three dark themes from upstream palettes: Poimandres, Material Palenight (Shiki values), and Ayu Mirage (ayu-colors 8.0.1). Line-number and comment tones were lightened where needed to pass WCAG AA.
-- Three OFL fonts: Intel One Mono, Commit Mono, and Fragment Mono. Three matching templates.
-- Workflow templates in `docs/workflows/` and `scripts/activate-workflows.sh` (see docs/WORKFLOW_ACTIVATION.md) for one-command activation.
-
-### Fixed
-
-- Missing hook dependency in the share-link loader (lint warning).
+- **Interactive Line Highlighting:** click any line in the live preview to toggle highlight, `Shift+Click` for a range, or `Alt+Click` to cycle highlight / `+` added / `-` removed / off.
+- **Line Highlight Controls in Style Tab & 5 Highlight Colors:** Violet, Amber, Cyan, Emerald, and Rose accent tints with `Dim` or `Blur` unfocused line modes.
+- **Higher Code Capacity:** raised input limits to **500,000 characters** and **5 MB** files with safe syntax-highlight chunking and row bounding so large files stay fast.
+- **32 Themes & 17 Fonts:** added Ayu Dark, Material Palenight, Shades of Purple, Cobalt2, Horizon Dark, Modus Operandi, and PaperColor Light (all WCAG AA contrast verified), plus Anonymous Pro and Overpass Mono (SIL OFL-1.1).
+- **Undo / Redo & Smart Shuffle:** `Ctrl/Cmd + Z` and `Ctrl/Cmd + Shift + Z` history stack, plus harmonious theme + background + font randomization across the full catalog.
+- **Pattern Background Tab, Window Width Presets & Custom Watermark:** 1-click pattern swatches (`Starfield`, `Blueprint`, `Studio Grid`, `Diagonal`, `Polka Dots`, `Crosshatch`), window width options (`Auto`, `540px`, `760px`, `960px`), and customizable watermark text.
 
 ### Added in studio v1.1
 

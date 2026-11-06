@@ -55,12 +55,12 @@ describe("share links", () => {
   });
 
   it("rejects payloads that inflate beyond the safety limit (zip-bomb guard)", async () => {
-    const bomb = await craft({ v: 1, code: "a".repeat(450_000) });
+    const bomb = await craft({ v: 1, code: "a".repeat(650_000) });
     await expect(decodeShare(bomb)).rejects.toThrow("expands to more data");
   });
 
   it("rejects code longer than the editor allows", async () => {
-    await expect(decodeShare(await craft({ v: 1, code: "x".repeat(100_001) }))).rejects.toThrow("too much code");
+    await expect(decodeShare(await craft({ v: 1, code: "x".repeat(500_001) }))).rejects.toThrow("too much code");
   });
 
   it("sanitizes hostile settings and language values instead of trusting them", async () => {

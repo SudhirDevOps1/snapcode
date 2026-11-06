@@ -45,4 +45,28 @@ describe("sanitizeSettings (v1.1 fields)", () => {
       expect(sanitizeSettings({ exportScale }).exportScale).toBe(exportScale);
     }
   });
+
+  it("validates highlight color, unfocused mode, window width, and watermark text", () => {
+    const s = sanitizeSettings({
+      highlightColor: "amber",
+      unfocusedMode: "blur",
+      windowWidth: "960",
+      watermarkText: "  @SudhirDevOps1  ",
+    });
+    expect(s.highlightColor).toBe("amber");
+    expect(s.unfocusedMode).toBe("blur");
+    expect(s.windowWidth).toBe("960");
+    expect(s.watermarkText).toBe("@SudhirDevOps1");
+
+    const fallback = sanitizeSettings({
+      highlightColor: "neon-pink",
+      unfocusedMode: "invert",
+      windowWidth: "9999",
+      watermarkText: "   ",
+    });
+    expect(fallback.highlightColor).toBe("violet");
+    expect(fallback.unfocusedMode).toBe("dim");
+    expect(fallback.windowWidth).toBe("auto");
+    expect(fallback.watermarkText).toBe(DEFAULT_SETTINGS.watermarkText);
+  });
 });

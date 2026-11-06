@@ -100,16 +100,32 @@ export function highlightCode(code: string, langId: string): string {
   return escapeHtml(code);
 }
 
+const MAX_SYNTAX_HIGHLIGHT_CHARS = 80_000;
+
 /**
  * Splits highlighted HTML into one fragment per line. Spans that cross line breaks
  * (block comments, template strings) are closed at each line end and reopened on the next,
  * so every row renders with balanced markup and correct colours.
+ *
+ * For very large files (> 80k chars), the first 80k chars receive full token highlighting and
+ * trailing lines are safely HTML-escaped so pasting large files stays responsive.
  */
 export function highlightCodeLines(code: string, langId: string): string[] {
-  const html = highlightCode(code, langId);
+  let head = code;
+  let tailLines: string[] = [];
+
+  if (code.length > MAX_SYNTAX_HIGHLIGHT_CHARS) {
+    const splitAt = code.lastIndexOf("\n", MAX_SYNTAX_HIGHLIGHT_CHARS);
+    const cut = splitAt > 0 ? splitAt : MAX_SYNTAX_HIGHLIGHT_CHARS;
+    head = code.slice(0, cut);
+    const tail = code.slice(splitAt > 0 ? cut + 1 : cut);
+    tailLines = tail.split("\n").map(escapeHtml);
+  }
+
+  const html = highlightCode(head, langId);
   const openTags: string[] = [];
 
-  return html.split("\n").map((line) => {
+  const highlightedHead = html.split("\n").map((line) => {
     const prefix = openTags.join("");
     const tagRegex = /<\/?span\b[^>]*>/gi;
     let match: RegExpExecArray | null;
@@ -123,6 +139,8 @@ export function highlightCodeLines(code: string, langId: string): string[] {
     }
     return `${prefix}${line}${"</span>".repeat(openTags.length)}`;
   });
+
+  return tailLines.length > 0 ? [...highlightedHead, ...tailLines] : highlightedHead;
 }
 
 export function detectLanguage(code: string): string | null {

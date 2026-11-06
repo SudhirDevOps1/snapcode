@@ -58,16 +58,9 @@ This document records what shipped in the v1.1 studio, the research behind it, h
 | Library uses localStorage with explicit save                | User control, no account, no server                       | Subject to browser storage limits and cleared with site data.                                                   |
 | Merge `origin/main` with `-s ours` instead of force-pushing | Keeps the remote history intact                           | Files that exist only on the remote are removed from main's tree. They remain in the backup branch and history. |
 
-## v1.2 additions
-
-- Undo/redo for style settings (`src/lib/history.ts`, 8 unit tests, 1 E2E scenario).
-- Themes researched from upstream sources: Poimandres (https://github.com/ajaxdude/opencode-ai-poimandres-theme lists the original palette), Material Palenight (https://github.com/seansmoove27/palenight-exact-theme, Shiki values), Ayu Mirage (`ayu` npm package 8.0.1, background #242936; its translucent comment colour was flattened to an opaque tone that passes WCAG AA).
-- Fonts verified on the registry as OFL-1.1: Intel One Mono, Commit Mono, Fragment Mono.
-- **Workflow delivery:** GitHub rejected `.github/workflows` pushes because the publishing token lacked the `workflow` permission. Templates now live in `docs/workflows/` with an activation script.
-- **Toolchain:** TypeScript is pinned to 6.0.3 because typescript-eslint does not support TypeScript 7.0. `.npmrc` sets `legacy-peer-deps` until peer ranges align.
-
 ## Deferred
 
+- Undo and redo for style and code changes.
 - A multi-file build, so fonts and grammars load on demand and first load shrinks.
 - A custom theme editor with per-token colours and contrast warnings.
 - Localisation (including Hindi UI strings) and right-to-left checks.
