@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tag must match package.json version
+        run: |
+          node -e "const v=require('./package.json').version; if (process.env.GITHUB_REF_NAME !== 'v' + v) { console.error('Tag ' + process.env.GITHUB_REF_NAME + ' does not match package version ' + v); process.exit(1); }"
+      - run: npm run check
+      - run: npm run audit:prod
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Package verified build, SBOM, and checksums
+        run: |
+          mkdir -p release
+          (cd dist && zip -qr "../release/snapcode-${GITHUB_REF_NAME}.zip" .)
+          npm sbom --omit=dev --sbom-format cyclonedx > release/sbom.cdx.json
+          (cd release && sha256sum snapcode-*.zip sbom.cdx.json > SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-files
+          path: release/
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: release/
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: release/snapcode-*.zip
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

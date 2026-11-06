@@ -14,6 +14,9 @@ import geist from "@fontsource/geist-mono/files/geist-mono-latin-400-normal.woff
 import redHat from "@fontsource/red-hat-mono/files/red-hat-mono-latin-400-normal.woff2?inline";
 import azeret from "@fontsource/azeret-mono/files/azeret-mono-latin-400-normal.woff2?inline";
 import dmMono from "@fontsource/dm-mono/files/dm-mono-latin-400-normal.woff2?inline";
+import intelOne from "@fontsource/intel-one-mono/files/intel-one-mono-latin-400-normal.woff2?inline";
+import commitMono from "@fontsource/commit-mono/files/commit-mono-latin-400-normal.woff2?inline";
+import fragmentMono from "@fontsource/fragment-mono/files/fragment-mono-latin-400-normal.woff2?inline";
 
 interface FontFace {
   id: string;
@@ -39,6 +42,9 @@ const faces: FontFace[] = [
   { id: "red-hat", name: "Red Hat Mono", source: redHat, weight: "400" },
   { id: "azeret", name: "Azeret Mono", source: azeret, weight: "400" },
   { id: "dm-mono", name: "DM Mono", source: dmMono, weight: "400" },
+  { id: "intel-one", name: "Intel One Mono", source: intelOne, weight: "400" },
+  { id: "commit-mono", name: "Commit Mono", source: commitMono, weight: "400" },
+  { id: "fragment-mono", name: "Fragment Mono", source: fragmentMono, weight: "400" },
 ];
 
 const fontRule = (face: FontFace) =>

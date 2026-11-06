@@ -17,17 +17,17 @@ A private, local-first code-to-image studio. Paste code, style it, and export a 
 
 ## Highlights
 
-| Area             | What you get                                                                                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                 |
-| **Focus & diff** | Highlight specific lines (`2, 5-7`), mark added `+` and removed `-` lines, dim the rest, or show only annotated lines with context and gap markers.                                  |
-| **Style**        | 25 editor themes (18 dark, 7 light), 15 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, language badge, grain texture.      |
-| **Backgrounds**  | 19 gradient and mesh backgrounds, 4 patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).          |
-| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded.                                                                                       |
-| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame. |
-| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                      |
-| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                  |
-| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, WCAG AA checks in CI.                                                             |
+| Area             | What you get                                                                                                                                                                                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code**         | 34 languages plus auto-detect. Open, paste, or drop files. Tidy indentation, tab width 2/4/8, wrap long lines, starting line number.                                                                                                                                  |
+| **Focus & diff** | Highlight specific lines (`2, 5-7`), mark added `+` and removed `-` lines, dim the rest, or show only annotated lines with context and gap markers.                                                                                                                   |
+| **Style**        | 28 editor themes (21 dark, 7 light), 18 bundled monospace fonts, letter spacing, line height, ligatures, five window styles, four frame borders, language badge, grain texture. **Undo/redo** for every style change (buttons or Ctrl/Cmd + Z, Ctrl/Cmd + Shift + Z). |
+| **Backgrounds**  | 19 gradient and mesh backgrounds, 4 patterns, a custom two-colour gradient, solid colour, transparency, and **your own photo** (dimmed, blurred, processed on this device).                                                                                           |
+| **Export**       | PNG at 2x, 3x, or 4x; JPEG and WebP with a quality slider; vector **SVG** with fonts embedded.                                                                                                                                                                        |
+| **Frames**       | Auto-fit, Wide 16:9 (1600 × 900), Square 1:1 (1080 × 1080), Portrait 4:5 (1080 × 1350), Social card (1200 × 630), Story 9:16 (1080 × 1920). The code scales to fit inside the frame.                                                                                  |
+| **Sharing**      | Copy image, Web Share where supported, and **share links** that keep the code inside the URL fragment (`#s=…`).                                                                                                                                                       |
+| **Library**      | Save up to 30 snippets in this browser, load or delete them, and delete all local data in one step.                                                                                                                                                                   |
+| **Platform**     | Installable PWA with offline export, responsive from 320 px, dark studio mode, keyboard shortcuts, WCAG AA checks in CI.                                                                                                                                              |
 
 <img src="docs/screenshots/social-frame.png" alt="A 1200 by 630 social card generated by Snapcode" width="600" />
 
@@ -89,14 +89,25 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 
 ## CI/CD and repository workflows
 
-| Workflow                                                           | Trigger                         | What it does                                                                                                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`ci.yml`](.github/workflows/ci.yml)                               | Push and pull request to `main` | Format, lint, typecheck, unit tests, and build on Node 22 and 24. Desktop and mobile Playwright tests. Production audit. Container build and smoke test (health, CSP, non-root, security.txt).       |
-| [`codeql.yml`](.github/workflows/codeql.yml)                       | Push, pull request, weekly      | CodeQL analysis for JavaScript and TypeScript.                                                                                                                                                       |
-| [`scorecard.yml`](.github/workflows/scorecard.yml)                 | Push to `main`, weekly          | OpenSSF Scorecard supply-chain analysis, published with SARIF upload.                                                                                                                                |
-| [`dependency-review.yml`](.github/workflows/dependency-review.yml) | Pull request                    | Blocks dependency changes that add high-severity known vulnerabilities.                                                                                                                              |
-| [`release.yml`](.github/workflows/release.yml)                     | Tag `vX.Y.Z`                    | Verifies the tag matches `package.json`, runs the full check and browser suites, builds a ZIP with a CycloneDX SBOM and SHA-256 checksums, attests build provenance, and publishes a GitHub Release. |
-| [`dependabot.yml`](.github/dependabot.yml)                         | Weekly                          | Updates for npm, GitHub Actions, and Docker.                                                                                                                                                         |
+> **Status: templates ready, activation pending.** The workflows live in [`docs/workflows/`](docs/workflows) because the token used to publish this repository lacks GitHub's `workflow` permission, and GitHub rejects any push that touches `.github/workflows/` without it. Until they are activated, the CI badges above show "no status" and only Dependabot runs.
+>
+> **Activate in one minute:**
+>
+> ```bash
+> node scripts/enable-workflows.mjs   # copies docs/workflows/*.yml to .github/workflows/
+> git add .github/workflows && git commit -m "ci: activate workflows" && git push
+> ```
+>
+> Use a token with **Workflows: Read and write** (fine-grained) or the **`workflow`** scope (classic), or upload the files through the GitHub web UI (_Add file → Upload files_ into `.github/workflows/`).
+
+| Workflow                                                        | Trigger                         | What it does                                                                                                                                                                                         |
+| --------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ci.yml`](docs/workflows/ci.yml)                               | Push and pull request to `main` | Format, lint, typecheck, unit tests, and build on Node 22 and 24. Desktop and mobile Playwright tests. Production audit. Container build and smoke test (health, CSP, non-root, security.txt).       |
+| [`codeql.yml`](docs/workflows/codeql.yml)                       | Push, pull request, weekly      | CodeQL analysis for JavaScript and TypeScript.                                                                                                                                                       |
+| [`scorecard.yml`](docs/workflows/scorecard.yml)                 | Push to `main`, weekly          | OpenSSF Scorecard supply-chain analysis, published with SARIF upload.                                                                                                                                |
+| [`dependency-review.yml`](docs/workflows/dependency-review.yml) | Pull request                    | Blocks dependency changes that add high-severity known vulnerabilities.                                                                                                                              |
+| [`release.yml`](docs/workflows/release.yml)                     | Tag `vX.Y.Z`                    | Verifies the tag matches `package.json`, runs the full check and browser suites, builds a ZIP with a CycloneDX SBOM and SHA-256 checksums, attests build provenance, and publishes a GitHub Release. |
+| [`dependabot.yml`](.github/dependabot.yml)                      | Weekly                          | Updates for npm, GitHub Actions, and Docker.                                                                                                                                                         |
 
 **Recommended repository settings** (these cannot be set from files):
 
@@ -116,7 +127,8 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 
 ## Known limitations
 
-- The build is a single HTML file, so fonts and grammars are inlined. `index.html` is about 917 KB (about 461 KB gzipped). A multi-file build would allow on-demand loading; it is on the roadmap.
+- The build is a single HTML file, so fonts and grammars are inlined. `index.html` is about 1.06 MB (about 559 KB gzipped); 18 embedded fonts account for most of it, and Commit Mono alone adds 48 KB of WOFF2. A multi-file build with on-demand font loading is the top roadmap item.
+- Undo/redo covers style settings. The code editor keeps the browser's native text undo.
 - Docker and hosted GitHub Actions run in your repository, not in the development sandbox used to build this version. Check the first CI run.
 - WebP encoding depends on the browser. When it is unavailable, the export falls back to PNG and says so.
 - SVG uses `foreignObject`, which some vector editors render incorrectly. Browsers and most document tools display it correctly.

@@ -125,6 +125,28 @@ test("photo background is processed on-device, exports, and reports no CSP viola
   expect(violations).toEqual([]);
 });
 
+test("undo and redo restore style changes from buttons and the keyboard", async ({ page }) => {
+  const undoButton = page.getByRole("button", { name: "Undo style change", exact: true });
+  const redoButton = page.getByRole("button", { name: "Redo style change", exact: true });
+  await expect(undoButton).toBeDisabled();
+
+  await page.getByLabel("Theme", { exact: true }).selectOption("poimandres");
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
+  await page.waitForTimeout(600);
+  await page.getByLabel("Theme", { exact: true }).selectOption("palenight");
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(41, 45, 62)");
+
+  await undoButton.click();
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
+  await redoButton.click();
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(41, 45, 62)");
+
+  // Keyboard shortcut works when focus is not inside a text field.
+  await page.locator("body").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(page.locator(".code-window")).toHaveCSS("background-color", "rgb(27, 30, 40)");
+});
+
 test("new code and export panels meet automated WCAG AA checks", async ({ page }) => {
   await page.getByRole("tab", { name: "Code", exact: true }).click();
   await page.waitForTimeout(400);

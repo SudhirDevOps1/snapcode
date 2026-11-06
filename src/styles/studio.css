@@ -115,6 +115,15 @@
 }
 
 /* ---------- control panel additions ---------- */
+.panel-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.panel-heading-actions .icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 .editor-count {
   color: #6f6580;
 }

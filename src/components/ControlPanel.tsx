@@ -18,7 +18,9 @@ import {
   Moon,
   Palette,
   Plus,
+  Redo2,
   RotateCcw,
+  Undo2,
   Shuffle,
   Sparkles,
   Sun,
@@ -73,6 +75,10 @@ interface Props {
   onDeleteLibrary: (id: string) => void;
   onClearLocalData: () => void;
   onReset: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onShuffle: () => void;
   onSample: () => void;
   onFile: (file: File) => void;
@@ -239,9 +245,29 @@ export default function ControlPanel(p: Props) {
     <aside className="control-panel" aria-label="Snippet settings">
       <div className="panel-heading">
         <h2>Make it yours</h2>
-        <button className="icon-button" title="Reset styling" aria-label="Reset styling" onClick={p.onReset}>
-          <RotateCcw size={15} />
-        </button>
+        <div className="panel-heading-actions">
+          <button
+            className="icon-button"
+            title="Undo style change (Ctrl/Cmd + Z)"
+            aria-label="Undo style change"
+            disabled={!p.canUndo}
+            onClick={p.onUndo}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            className="icon-button"
+            title="Redo style change (Ctrl/Cmd + Shift + Z)"
+            aria-label="Redo style change"
+            disabled={!p.canRedo}
+            onClick={p.onRedo}
+          >
+            <Redo2 size={15} />
+          </button>
+          <button className="icon-button" title="Reset styling" aria-label="Reset styling" onClick={p.onReset}>
+            <RotateCcw size={15} />
+          </button>
+        </div>
       </div>
       <div className="panel-tabs" role="tablist" aria-label="Editor controls">
         {tabs.map((tab, index) => (

@@ -60,6 +60,7 @@ import {
   type LibraryItem,
 } from "./lib/library";
 import { buildShareUrl, decodeShare, encodeShare, readShareToken } from "./lib/share";
+import { commit, createHistory, isEditableTarget, redo, undo, type History } from "./lib/history";
 import { usePwa } from "./hooks/usePwa";
 
 const DEFAULT_BG_ID = "aurora";
@@ -74,7 +75,12 @@ export default function App() {
   const [code, setCode] = useState(SAMPLES.javascript);
   const [language, setLanguage] = useState("javascript");
   const [title, setTitle] = useState("hello-world.js");
-  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const [history, setHistory] = useState<History<Settings>>(() => createHistory(loadSettings()));
+  const settings = history.present;
+  const setSettings = useCallback(
+    (next: Settings) => setHistory((current) => commit(current, sanitizeSettings(next), Date.now())),
+    [],
+  );
   const [lineInputs, setLineInputs] = useState<LineInputs>(EMPTY_LINE_INPUTS);
   const [photo, setPhoto] = useState<BackgroundPhoto | null>(null);
   const [library, setLibrary] = useState<LibraryItem[]>(() => loadLibrary());
@@ -188,12 +194,18 @@ export default function App() {
       .catch((error: unknown) =>
         notify(error instanceof Error ? error.message : "This share link could not be opened.", true),
       );
-  }, [notify]);
+  }, [notify, setSettings]);
 
+  // Rapid edits (slider drags, typing a number) within 500 ms become a single undo step.
   const patch = useCallback(
-    (next: Partial<Settings>) => setSettings((current) => sanitizeSettings({ ...current, ...next })),
+    (next: Partial<Settings>) =>
+      setHistory((current) => commit(current, sanitizeSettings({ ...current.present, ...next }), Date.now(), 500)),
     [],
   );
+  const undoStyle = useCallback(() => setHistory((current) => undo(current)), []);
+  const redoStyle = useCallback(() => setHistory((current) => redo(current)), []);
+  const canUndo = history.past.length > 0;
+  const canRedo = history.future.length > 0;
   const patchLineInputs = useCallback(
     (next: Partial<LineInputs>) => setLineInputs((current) => ({ ...current, ...next })),
     [],
@@ -482,6 +494,13 @@ export default function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!dialog && (event.ctrlKey || event.metaKey)) {
+        const key = event.key.toLowerCase();
+        if ((key === "z" || key === "y") && !isEditableTarget(event.target)) {
+          event.preventDefault();
+          if (key === "y" || event.shiftKey) redoStyle();
+          else undoStyle();
+          return;
+        }
         if (event.key.toLowerCase() === "s") {
           event.preventDefault();
           void performExport("download");
@@ -494,7 +513,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [performExport, editCode, dialog]);
+  }, [performExport, editCode, dialog, undoStyle, redoStyle]);
 
   const toggleFullscreen = async () => {
     try {
@@ -629,6 +648,10 @@ export default function App() {
               onLoadLibrary={loadSnippet}
               onDeleteLibrary={deleteSnippet}
               onClearLocalData={clearLocalData}
+              onUndo={undoStyle}
+              onRedo={redoStyle}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onReset={() => {
                 setSettings({ ...DEFAULT_SETTINGS, uiTheme: settings.uiTheme });
                 setLineInputs(EMPTY_LINE_INPUTS);
