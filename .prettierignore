@@ -1,0 +1,11 @@
+dist
+node_modules
+coverage
+artifacts
+test-results
+playwright-report
+public/docs
+public/licenses
+package-lock.json
+public/sw.js
+*.png

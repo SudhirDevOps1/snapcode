@@ -1,0 +1,5 @@
+Contact: https://github.com/SudhirDevOps1/snapcode/security/advisories/new
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, hi
+Policy: https://github.com/SudhirDevOps1/snapcode/blob/main/SECURITY.md
+Acknowledgments: https://github.com/SudhirDevOps1/snapcode/blob/main/SECURITY.md#recognition
