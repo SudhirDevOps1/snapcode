@@ -105,7 +105,7 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 - Default `GITHUB_TOKEN` permissions to read-only.
 - Dependency review needs the dependency graph, and CodeQL needs GitHub Code Security on private repositories.
 
-**Pushing workflow files:** a fine-grained token needs _Workflows: Read and write_ to push changes under `.github/workflows/`. A classic token needs the `workflow` scope. Without it, GitHub rejects the push.
+**Pushing workflow files:** a fine-grained token needs _Workflows: Read and write_ to push changes under `.github/workflows/`. A classic token needs the `workflow` scope. Without it, GitHub rejects the push. See [workflow activation](docs/WORKFLOW_ACTIVATION.md) for the secure owner setup and token-rotation instructions.
 
 ## Documentation
 
