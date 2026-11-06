@@ -1,0 +1,41 @@
+name: Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Choose language ...
+        2. Paste code ...
+        3. Click Download PNG
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Preview, Syntax highlighting, PNG export, Copy / Share, Install / Offline (PWA), Layout / Mobile, Other]
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & OS
+      placeholder: Chrome 130 on Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Code snippet (optional)
+      description: Only share code you are comfortable making public.
+      render: text

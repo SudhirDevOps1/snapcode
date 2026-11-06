@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Snapcode - Your code, beautifully framed</title>
+    <meta
+      name="description"
+      content="A private, local-first code-to-image studio. Style your snippets and export crisp PNGs, even offline. No account, no uploads, no watermark."
+    />
+    <meta name="theme-color" content="#7755DB" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ws: wss:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snapcode" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript
+      >Snapcode needs JavaScript to highlight your code and create images locally. Enable JavaScript to open the
+      studio.</noscript
+    >
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

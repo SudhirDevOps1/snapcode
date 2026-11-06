@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Snapcode - Code to Image Studio",
+  "short_name": "Snapcode",
+  "description": "Turn pasted code into beautiful, shareable images. Pick a language, style the window, export a high-quality PNG.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F8F8FA",
+  "theme_color": "#7755DB",
+  "categories": ["developer tools", "utilities", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
