@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       - name: Tag must match package.json version
         run: |
-          node -e "const v=require('./package.json').version; if (process.env.GITHUB_REF_NAME !== 'v' + v) { console.error('Tag ' + process.env.GITHUB_REF_NAME + ' does not match package version ' + v); process.exit(1); }"
+          node -e "const v=require('./package.json').version; if (process.env.GITHUB_REF_NAME !== 'v' + v) { console.error('Tag mismatch'); process.exit(1); }"
       - run: npm run check
       - run: npm run audit:prod
       - run: npx playwright install --with-deps chromium
@@ -38,7 +38,8 @@ jobs:
           (cd dist && zip -qr "../release/snapcode-${GITHUB_REF_NAME}.zip" .)
           npm sbom --omit=dev --sbom-format cyclonedx > release/sbom.cdx.json
           (cd release && sha256sum snapcode-*.zip sbom.cdx.json > SHA256SUMS)
-      - uses: actions/upload-artifact@v7
+      - name: Upload release files
+        uses: actions/upload-artifact@v7
         with:
           name: release-files
           path: release/

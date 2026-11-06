@@ -9,7 +9,7 @@ Notable changes are recorded here. Version tags follow Semantic Versioning.
 - Undo and redo for style changes, from header buttons or Ctrl/Cmd + Z and Ctrl/Cmd + Shift + Z (Ctrl + Y). Slider drags merge into one step; history keeps 50 steps; text fields keep native undo.
 - Three dark themes from upstream palettes: Poimandres, Material Palenight (Shiki values), and Ayu Mirage (ayu-colors 8.0.1). Line-number and comment tones were lightened where needed to pass WCAG AA.
 - Three OFL fonts: Intel One Mono, Commit Mono, and Fragment Mono. Three matching templates.
-- Workflow templates in `docs/workflows/` and `scripts/enable-workflows.mjs` for one-command activation.
+- Workflow templates in `docs/workflows/` and `scripts/activate-workflows.sh` (see docs/WORKFLOW_ACTIVATION.md) for one-command activation.
 
 ### Fixed
 

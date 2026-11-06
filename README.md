@@ -91,14 +91,13 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). A m
 
 > **Status: templates ready, activation pending.** The workflows live in [`docs/workflows/`](docs/workflows) because the token used to publish this repository lacks GitHub's `workflow` permission, and GitHub rejects any push that touches `.github/workflows/` without it. Until they are activated, the CI badges above show "no status" and only Dependabot runs.
 >
-> **Activate in one minute:**
+> **Activate:** follow [docs/WORKFLOW_ACTIVATION.md](docs/WORKFLOW_ACTIVATION.md), or run
 >
 > ```bash
-> node scripts/enable-workflows.mjs   # copies docs/workflows/*.yml to .github/workflows/
-> git add .github/workflows && git commit -m "ci: activate workflows" && git push
+> GH_TOKEN='token-with-workflows-scope' sh scripts/activate-workflows.sh
 > ```
 >
-> Use a token with **Workflows: Read and write** (fine-grained) or the **`workflow`** scope (classic), or upload the files through the GitHub web UI (_Add file → Upload files_ into `.github/workflows/`).
+> The script copies `docs/workflows/*.yml` into `.github/workflows/`, commits them, and pushes without writing the token to git config. The token needs **Workflows: Read and write** (fine-grained) or the **`workflow`** scope (classic). You can also upload the files through the GitHub web UI (_Add file → Upload files_ into `.github/workflows/`).
 
 | Workflow                                                        | Trigger                         | What it does                                                                                                                                                                                         |
 | --------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
