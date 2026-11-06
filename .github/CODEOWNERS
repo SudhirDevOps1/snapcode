@@ -1,0 +1,9 @@
+# Default owner for everything in the repository.
+* @SudhirDevOps1
+
+# Security-sensitive areas always require the owner's review.
+/.github/ @SudhirDevOps1
+/public/.well-known/ @SudhirDevOps1
+/src/lib/share.ts @SudhirDevOps1
+/src/lib/library.ts @SudhirDevOps1
+/scripts/finalize-build.mjs @SudhirDevOps1
