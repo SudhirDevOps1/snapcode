@@ -140,11 +140,13 @@ The Docker and GitHub workflow configurations need their first successful run in
 
 ## Quality and Release Workflow
 
-- **CI ([`ci.yml`](.github/workflows/ci.yml)):** formatting, strict types, lint, unit tests, and builds on Node 22 and 24; separate browser, production dependency-audit, and container smoke-test jobs.
-- **CodeQL ([`codeql.yml`](.github/workflows/codeql.yml)):** JavaScript/TypeScript static security and quality analysis on changes and weekly schedules.
-- **GitHub Pages ([`pages.yml`](.github/workflows/pages.yml)):** automated static deployment workflow on pushes to `main` (enable Pages → GitHub Actions in repository settings).
+- **CI ([`ci.yml`](docs/workflows/ci.yml)):** formatting, strict types, lint, unit tests, and builds on Node 22 and 24; separate browser, production dependency-audit, and container smoke-test jobs.
+- **CodeQL ([`codeql.yml`](docs/workflows/codeql.yml)):** JavaScript/TypeScript static security and quality analysis on changes and weekly schedules.
+- **GitHub Pages ([`pages.yml`](docs/workflows/pages.yml)):** automated static deployment workflow on pushes to `main` (enable Pages → GitHub Actions in repository settings).
 - **Dependabot ([`dependabot.yml`](.github/dependabot.yml)):** scheduled npm, GitHub Actions, and Docker update proposals. Review and test before merging.
-- **Release ([`release.yml`](.github/workflows/release.yml)):** a version tag must match `package.json`. Checks and browser tests run before publishing a build ZIP, CycloneDX SBOM, and SHA-256 checksums.
+- **Release ([`release.yml`](docs/workflows/release.yml)):** a version tag must match `package.json`. Checks and browser tests run before publishing a build ZIP, CycloneDX SBOM, and SHA-256 checksums.
+
+> **Enabling GitHub Actions:** Copy `docs/workflows/*.yml` into `.github/workflows/` via the GitHub Web UI or a token with `Workflows: Read & Write` permission (`mkdir -p .github/workflows && cp docs/workflows/*.yml .github/workflows/`).
 
 Push a release only after reviewing the changelog and configuring repository protections:
 
