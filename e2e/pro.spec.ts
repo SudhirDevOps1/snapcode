@@ -165,6 +165,40 @@ test("handles large snippets (> 150k chars) and supports Undo / Redo", async ({ 
   await expect(page.locator(".editor-count")).toContainText("1,200 lines");
 });
 
+test("export range can limit the image to highlighted lines and include a brand mark", async ({ page }) => {
+  const png = await sharp({
+    create: { width: 40, height: 40, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 1 } },
+  })
+    .png()
+    .toBuffer();
+
+  await page.getByRole("tab", { name: "Code", exact: true }).click();
+  await page.getByLabel("Your code", { exact: true }).fill("one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten");
+  await page.locator(".code-line").nth(1).click();
+  await expect(page.locator(".code-line.is-highlighted")).toHaveCount(1);
+
+  await page.getByRole("tab", { name: "Style", exact: true }).click();
+  await page.locator("#advanced-options > summary").click();
+  await page.getByRole("switch", { name: "Brand mark / logo", exact: true }).click();
+  await page.getByLabel("Choose brand logo", { exact: true }).setInputFiles({
+    name: "mark.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await expect(page.locator(".brand-mark")).toHaveCount(1);
+
+  await page.getByRole("tab", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Highlighted", exact: true }).click();
+  const highlighted = await downloadNamed(page, "Download PNG");
+  expect((await sharp(highlighted.bytes).metadata()).format).toBe("png");
+
+  await page.getByRole("button", { name: "All", exact: true }).click();
+  const all = await downloadNamed(page, "Download PNG");
+  const highlightedHeight = (await sharp(highlighted.bytes).metadata()).height ?? 0;
+  const allHeight = (await sharp(all.bytes).metadata()).height ?? 0;
+  expect(highlightedHeight).toBeLessThan(allHeight);
+});
+
 test("new code and export panels meet automated WCAG AA checks", async ({ page }) => {
   await page.getByRole("tab", { name: "Code", exact: true }).click();
   await page.waitForTimeout(400);

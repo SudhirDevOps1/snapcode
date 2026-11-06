@@ -47,8 +47,9 @@ import {
 } from "./lib/data";
 import { detectLanguage } from "./lib/highlight";
 import { addRangeToSpec, formatCodeSnippet, parseLineSpec, removeLineFromSpec, toggleLineInSpec } from "./lib/lines";
-import { downloadBlob, imageFilename, renderImage } from "./lib/export";
+import { cloneWithExportRange, downloadBlob, imageFilename, renderImage } from "./lib/export";
 import { readCodeFile } from "./lib/files";
+import { prepareLogo } from "./lib/logo";
 import { preparePhoto, type BackgroundPhoto } from "./lib/photo";
 import { EMPTY_LINE_INPUTS, type LineAnnotations, type LineInputs } from "./lib/rows";
 import { DEFAULT_SETTINGS, loadSettings, sanitizeSettings, saveSettings, type Settings } from "./lib/settings";
@@ -112,13 +113,32 @@ export default function App() {
 
   const undoStack = useRef<Snapshot[]>([]);
   const redoStack = useRef<Snapshot[]>([]);
+  const lastHistoryKey = useRef<string | null>(null);
+  const lastHistoryTime = useRef(0);
   const [, setHistoryTick] = useState(0);
 
-  const pushHistory = useCallback(() => {
-    undoStack.current = [...undoStack.current.slice(-29), { code, language, title, settings, lineInputs }];
-    redoStack.current = [];
-    setHistoryTick((n) => n + 1);
-  }, [code, language, title, settings, lineInputs]);
+  // History is coalesced within an 800 ms window for the same control (a slider drag counts as one undo).
+  const pushHistory = useCallback(
+    (key?: string) => {
+      const now = Date.now();
+      if (
+        key &&
+        key === lastHistoryKey.current &&
+        now - lastHistoryTime.current < 800 &&
+        undoStack.current.length > 0
+      ) {
+        redoStack.current = [];
+        setHistoryTick((n) => n + 1);
+        return;
+      }
+      lastHistoryKey.current = key ?? null;
+      lastHistoryTime.current = now;
+      undoStack.current = [...undoStack.current.slice(-29), { code, language, title, settings, lineInputs }];
+      redoStack.current = [];
+      setHistoryTick((n) => n + 1);
+    },
+    [code, language, title, settings, lineInputs],
+  );
 
   const handleUndo = useCallback(() => {
     const prev = undoStack.current.pop();
@@ -237,14 +257,14 @@ export default function App() {
 
   const patch = useCallback(
     (next: Partial<Settings>) => {
-      pushHistory();
+      pushHistory(`settings:${Object.keys(next).sort().join(",")}`);
       setSettings((current) => sanitizeSettings({ ...current, ...next }));
     },
     [pushHistory],
   );
   const patchLineInputs = useCallback(
     (next: Partial<LineInputs>) => {
-      pushHistory();
+      pushHistory(`lines:${Object.keys(next).sort().join(",")}`);
       setLineInputs((current) => ({ ...current, ...next }));
     },
     [pushHistory],
@@ -348,6 +368,7 @@ export default function App() {
   };
 
   const formatCode = () => {
+    pushHistory();
     const formatted = formatCodeSnippet(code, settings.tabSize);
     if (formatted === code) {
       notify("Code indentation is already tidy.");
@@ -355,6 +376,35 @@ export default function App() {
     }
     setCode(formatted);
     notify("Tidied indentation and trailing spaces.");
+  };
+
+  const handleCopyCode = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(code);
+      notify("Code copied to clipboard.");
+    } catch {
+      notify("Could not copy code in this browser.", true);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const pickBrandMark = async (file: File) => {
+    try {
+      const dataUrl = await prepareLogo(file);
+      patch({ showBrandMark: true, brandMarkDataUrl: dataUrl });
+      notify("Logo added. It stays on this device.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "That logo could not be used.", true);
+    }
+  };
+
+  const removeBrandMark = () => {
+    patch({ showBrandMark: false, brandMarkDataUrl: "" });
+    notify("Logo removed.");
   };
 
   const loadFile = async (file: File) => {
@@ -501,14 +551,26 @@ export default function App() {
     }
   };
 
+  const computeExportKeep = useCallback((): ReadonlySet<number> | null => {
+    if (settings.exportRange === "all") return null;
+    if (settings.exportRange === "annotated") {
+      const keep = new Set<number>();
+      for (const set of [annotations.highlight, annotations.added, annotations.removed]) {
+        for (const line of set) keep.add(line);
+      }
+      if (keep.size === 0) throw new Error("No lines selected for export. Highlight lines first or choose All lines.");
+      return keep;
+    }
+    // Custom range is expressed in display line numbers (including the configured starting line).
+    const keep = parseLineSpec(settings.exportRangeSpec);
+    if (keep.size === 0) throw new Error("Enter a valid custom range, for example 2, 5-7.");
+    return keep;
+  }, [settings.exportRange, settings.exportRangeSpec, annotations]);
+
   const performExport = useCallback(
     async (action: "download" | "copy" | "share") => {
       const node = exportRef.current;
       if (!node || exportLock.current) return;
-      if (previewCode !== code) {
-        notify("The preview is updating. Please export again in a moment.");
-        return;
-      }
       if (!code.trim()) {
         notify("Add a little code first.", true);
         editCode();
@@ -516,17 +578,26 @@ export default function App() {
       }
       exportLock.current = true;
       setExporting(true);
+      let cloned: HTMLElement | null = null;
       try {
         if (action === "copy" && (!navigator.clipboard?.write || !window.ClipboardItem)) {
           throw new Error("Image copying is unavailable in this browser. Download the image instead.");
         }
         const format = action === "download" ? settings.exportFormat : "png";
-        const render = renderImage(node, {
+        const keep = computeExportKeep();
+        const source = keep ? cloneWithExportRange(node, keep) : node;
+        if (keep) cloned = source;
+        const render = renderImage(source, {
           scale: settings.exportScale,
           fontId: settings.fontId,
           format,
           quality: settings.exportQuality,
           background: "#ffffff",
+        }).finally(() => {
+          if (cloned) {
+            cloned.remove();
+            cloned = null;
+          }
         });
 
         if (action === "copy") {
@@ -548,6 +619,10 @@ export default function App() {
           setDialog("share");
         }
       } catch (error) {
+        if (cloned) {
+          cloned.remove();
+          cloned = null;
+        }
         notify(
           error instanceof Error && error.name !== "NotAllowedError"
             ? error.message
@@ -559,7 +634,7 @@ export default function App() {
         setExporting(false);
       }
     },
-    [code, previewCode, editCode, notify, settings, title, exportFormat.label],
+    [code, editCode, notify, settings, title, exportFormat.label, computeExportKeep],
   );
 
   const shareImage = async () => {
@@ -796,11 +871,15 @@ export default function App() {
               onShuffle={shuffle}
               onSample={loadSample}
               onFile={(file) => void loadFile(file)}
+              onCopyCode={() => void handleCopyCode()}
               onCopyStyleJson={() => void copyStyleJson()}
               onImportStyleJson={() => setDialog("import-style")}
               onDownload={() => void performExport("download")}
               onCopy={() => void performExport("copy")}
               onCopyLink={() => void copyShareLink()}
+              onPrint={handlePrint}
+              onPickBrandMark={(file) => void pickBrandMark(file)}
+              onRemoveBrandMark={removeBrandMark}
               onNotice={notify}
               exporting={exporting}
               width={fit.width}
@@ -899,7 +978,7 @@ export default function App() {
                   <div className="drop-overlay">
                     <Upload size={32} />
                     <strong>Drop a little inspiration.</strong>
-                    <span>Code or text files, up to 1 MB.</span>
+                    <span>Code or text files, up to 5 MB.</span>
                   </div>
                 )}
               </div>

@@ -20,6 +20,9 @@ export type UiTheme = "light" | "dark";
 export type UnfocusedMode = "dim" | "blur";
 export type TabSize = 2 | 4 | 8;
 export type ExportScale = 2 | 3 | 4;
+export type ExportRange = "all" | "annotated" | "custom";
+export type BrandMarkPosition = "top-right" | "bottom-right";
+export type HeadlineTone = "light" | "dark";
 
 /** Every user-facing style preference. Code and imported files are never part of these settings. */
 export interface Settings {
@@ -58,6 +61,14 @@ export interface Settings {
   exportScale: ExportScale;
   exportFormat: ExportFormatId;
   exportQuality: number;
+  exportRange: ExportRange;
+  exportRangeSpec: string;
+  showBrandMark: boolean;
+  brandMarkDataUrl: string;
+  brandMarkPosition: BrandMarkPosition;
+  showHeadline: boolean;
+  headlineText: string;
+  headlineTone: HeadlineTone;
 }
 
 export const STORAGE_KEY = "snapcode.settings.v1";
@@ -98,9 +109,18 @@ export const DEFAULT_SETTINGS: Settings = {
   exportScale: 2,
   exportFormat: "png",
   exportQuality: 0.92,
+  exportRange: "all",
+  exportRangeSpec: "",
+  showBrandMark: false,
+  brandMarkDataUrl: "",
+  brandMarkPosition: "bottom-right",
+  showHeadline: false,
+  headlineText: "",
+  headlineTone: "light",
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const DATA_IMAGE_RASTER = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 const clampInt = (value: unknown, min: number, max: number, fallback: number): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
@@ -184,6 +204,19 @@ export function sanitizeSettings(input: unknown): Settings {
     exportScale: oneOf(raw.exportScale, [2, 3, 4] as const, d.exportScale),
     exportFormat: oneOf(raw.exportFormat, EXPORT_FORMAT_IDS, d.exportFormat),
     exportQuality: clampDecimal(raw.exportQuality, 0.5, 1, d.exportQuality, 2),
+    exportRange: oneOf(raw.exportRange, ["all", "annotated", "custom"] as const, d.exportRange),
+    exportRangeSpec: typeof raw.exportRangeSpec === "string" ? raw.exportRangeSpec.slice(0, 120) : d.exportRangeSpec,
+    showBrandMark: bool(raw.showBrandMark, d.showBrandMark),
+    brandMarkDataUrl:
+      typeof raw.brandMarkDataUrl === "string" &&
+      raw.brandMarkDataUrl.length <= 400_000 &&
+      DATA_IMAGE_RASTER.test(raw.brandMarkDataUrl)
+        ? raw.brandMarkDataUrl
+        : d.brandMarkDataUrl,
+    brandMarkPosition: oneOf(raw.brandMarkPosition, ["top-right", "bottom-right"] as const, d.brandMarkPosition),
+    showHeadline: bool(raw.showHeadline, d.showHeadline),
+    headlineText: typeof raw.headlineText === "string" ? raw.headlineText.trim().slice(0, 80) : d.headlineText,
+    headlineTone: oneOf(raw.headlineTone, ["light", "dark"] as const, d.headlineTone),
   };
 }
 

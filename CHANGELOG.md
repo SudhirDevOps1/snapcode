@@ -4,6 +4,15 @@ Notable changes are recorded here. Version tags follow Semantic Versioning.
 
 ## Unreleased
 
+### Added in studio v1.3
+
+- **Export line ranges:** export the entire snippet, only highlighted / diff lines, or a custom line range (e.g., `2, 5-7`) for focused social cards and documentation snippets.
+- **Brand mark / logo:** upload a small PNG, JPEG, or WebP logo (resized on-device and stored as a compact data URL) and place it `top-right` or `bottom-right` on the image.
+- **Headline overlay:** add an optional bold headline above the code window, with light or dark tone for dark or light backgrounds.
+- **Print / Save as PDF:** a print-optimized view that outputs only the export canvas.
+- **Coalesced undo history:** drags and repeated line clicks now count as single undo steps, keeping the history useful during long editing sessions.
+- **Copy code** button in the Code tab, and updated limits and help text to reflect **500,000-character** snippets and **5 MB** files.
+
 ### Added in studio v1.2
 
 - **Interactive Line Highlighting:** click any line in the live preview to toggle highlight, `Shift+Click` for a range, or `Alt+Click` to cycle highlight / `+` added / `-` removed / off.

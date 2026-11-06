@@ -69,4 +69,36 @@ describe("sanitizeSettings (v1.1 fields)", () => {
     expect(fallback.windowWidth).toBe("auto");
     expect(fallback.watermarkText).toBe(DEFAULT_SETTINGS.watermarkText);
   });
+
+  it("validates export range, headline, and brand mark fields", () => {
+    const s = sanitizeSettings({
+      exportRange: "annotated",
+      exportRangeSpec: " 2, 5-7 ",
+      showHeadline: true,
+      headlineText: "  Hello world  ",
+      headlineTone: "dark",
+      showBrandMark: true,
+      brandMarkPosition: "top-right",
+      brandMarkDataUrl: "data:image/png;base64,iVBORw0KGgo=",
+    });
+    expect(s.exportRange).toBe("annotated");
+    expect(s.exportRangeSpec).toBe(" 2, 5-7 ");
+    expect(s.showHeadline).toBe(true);
+    expect(s.headlineText).toBe("Hello world");
+    expect(s.headlineTone).toBe("dark");
+    expect(s.showBrandMark).toBe(true);
+    expect(s.brandMarkPosition).toBe("top-right");
+    expect(s.brandMarkDataUrl).toBe("data:image/png;base64,iVBORw0KGgo=");
+
+    const bad = sanitizeSettings({
+      exportRange: "everything",
+      headlineTone: "neon",
+      brandMarkPosition: "centre",
+      brandMarkDataUrl: "javascript:alert(1)",
+    });
+    expect(bad.exportRange).toBe("all");
+    expect(bad.headlineTone).toBe("light");
+    expect(bad.brandMarkPosition).toBe("bottom-right");
+    expect(bad.brandMarkDataUrl).toBe("");
+  });
 });

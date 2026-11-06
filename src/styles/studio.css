@@ -443,8 +443,139 @@
   border-color: #9f7aea;
   color: #e9d5ff;
 }
+[data-ui-theme="dark"] .headline-input,
+[data-ui-theme="dark"] .export-range-input,
+[data-ui-theme="dark"] .brand-mark-preview {
+  background: #12111a;
+  border-color: #2d2a3d;
+  color: #f2eff9;
+}
+[data-ui-theme="dark"] .brand-mark-label {
+  color: #d6cfe6;
+}
 [data-ui-theme="dark"] .history-buttons {
   border-right-color: #2d2a3d;
+}
+
+/* ---------- brand mark and headline on the exported canvas ---------- */
+.canvas-headline {
+  position: relative;
+  z-index: 1;
+  max-width: 90%;
+  margin: 0 0 16px;
+  font:
+    800 29px/1.22 "Inter",
+    system-ui,
+    sans-serif;
+  letter-spacing: -0.02em;
+}
+.canvas-headline.tone-light {
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+.canvas-headline.tone-dark {
+  color: #111827;
+}
+.brand-mark {
+  position: absolute;
+  z-index: 2;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 10px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+.brand-mark.top-right {
+  top: 14px;
+  right: 14px;
+}
+.brand-mark.bottom-right {
+  right: 14px;
+}
+.brand-mark-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.brand-mark-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-mark-preview {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e7e3ec;
+  padding: 4px;
+}
+.brand-mark-label {
+  flex: 1;
+  font-size: 11px;
+  color: #4d4558;
+}
+.headline-input,
+.export-range-input {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e7e3ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #3f3550;
+  font-size: 12px;
+}
+.export-range {
+  margin-top: 6px;
+}
+
+/* ---------- print / PDF output ---------- */
+@page {
+  margin: 0;
+}
+@media print {
+  body {
+    background: #fff !important;
+  }
+  .site-header,
+  .control-fieldset,
+  .workspace-intro,
+  .workspace-footnote,
+  .site-footer,
+  .mobile-export-bar,
+  .preview-toolbar,
+  .canvas-document,
+  .canvas-underbar,
+  .preview-bottom,
+  .toast-container {
+    display: none !important;
+  }
+  .main-content,
+  .studio,
+  .preview-panel,
+  .preview-area,
+  .preview-stage,
+  .preview-center {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .scaled-canvas {
+    width: auto !important;
+    height: auto !important;
+  }
+  .canvas-transform {
+    position: static !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 600px) {
@@ -456,5 +587,8 @@
   }
   .history-buttons {
     display: none;
+  }
+  .canvas-headline {
+    font-size: 22px;
   }
 }

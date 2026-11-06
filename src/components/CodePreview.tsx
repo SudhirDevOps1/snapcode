@@ -177,6 +177,9 @@ export default memo(function CodePreview({
         <div className="bg-layer bg-dim" aria-hidden="true" style={{ background: `rgba(0,0,0,${s.photoDim / 100})` }} />
       )}
       {s.grain && <div className="bg-layer bg-grain" aria-hidden="true" />}
+      {s.showHeadline && s.headlineText.trim() && (
+        <div className={`canvas-headline tone-${s.headlineTone}`}>{s.headlineText.trim()}</div>
+      )}
 
       <div ref={fitRef} className="frame-fit">
         <div
@@ -266,6 +269,7 @@ export default memo(function CodePreview({
                   return (
                     <div
                       key={row.n}
+                      data-line={row.n}
                       className={classes}
                       style={s.wrapLines ? { minHeight: lineHeight } : { height: lineHeight }}
                       title={
@@ -308,6 +312,14 @@ export default memo(function CodePreview({
       </div>
 
       {s.showWatermark && <span className="canvas-watermark">{s.watermarkText || "made with snapcode."}</span>}
+      {s.showBrandMark && s.brandMarkDataUrl && (
+        <img
+          className={`brand-mark ${s.brandMarkPosition}`}
+          src={s.brandMarkDataUrl}
+          alt=""
+          style={{ bottom: s.brandMarkPosition === "bottom-right" ? (s.showWatermark ? 52 : 14) : undefined }}
+        />
+      )}
     </div>
   );
 });

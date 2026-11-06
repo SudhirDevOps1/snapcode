@@ -18,6 +18,7 @@ import {
   Moon,
   Palette,
   Plus,
+  Printer,
   RotateCcw,
   Shuffle,
   Sparkles,
@@ -45,7 +46,15 @@ import {
 import { PHOTO_TYPES, type BackgroundPhoto } from "../lib/photo";
 import type { LibraryItem } from "../lib/library";
 import type { LineInputs } from "../lib/rows";
-import type { Settings, TabSize, UnfocusedMode, WindowBorder, WindowStyle } from "../lib/settings";
+import type {
+  ExportRange,
+  HeadlineTone,
+  Settings,
+  TabSize,
+  UnfocusedMode,
+  WindowBorder,
+  WindowStyle,
+} from "../lib/settings";
 
 export type PanelTab = "style" | "code" | "export";
 
@@ -81,11 +90,15 @@ interface Props {
   onShuffle: () => void;
   onSample: () => void;
   onFile: (file: File) => void;
+  onCopyCode: () => void;
   onCopyStyleJson: () => void;
   onImportStyleJson: () => void;
   onDownload: () => void;
   onCopy: () => void;
   onCopyLink: () => void;
+  onPrint: () => void;
+  onPickBrandMark: (file: File) => void;
+  onRemoveBrandMark: () => void;
   onNotice: (message: string, error?: boolean) => void;
   exporting: boolean;
   width: number;
@@ -185,6 +198,7 @@ export default function ControlPanel(p: Props) {
   const s = p.settings;
   const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const brandMarkRef = useRef<HTMLInputElement>(null);
   const advancedRef = useRef<HTMLDetailsElement>(null);
   const tabEscape = useRef(false);
   const [libraryName, setLibraryName] = useState("");
@@ -797,6 +811,91 @@ export default function ControlPanel(p: Props) {
                     />
                   </label>
                 )}
+                <div className="advanced-toggles" aria-label="Branding">
+                  <Toggle
+                    label="Headline above code"
+                    checked={s.showHeadline}
+                    onChange={(showHeadline) => p.onSettings({ showHeadline })}
+                  />
+                  {s.showHeadline && (
+                    <>
+                      <input
+                        className="headline-input"
+                        aria-label="Headline text"
+                        value={s.headlineText}
+                        maxLength={80}
+                        placeholder="e.g. Two sum in 8 lines"
+                        onChange={(e) => p.onSettings({ headlineText: e.target.value })}
+                      />
+                      <SelectField
+                        label="Headline color"
+                        id="headline-tone"
+                        value={s.headlineTone}
+                        onChange={(headlineTone) => p.onSettings({ headlineTone: headlineTone as HeadlineTone })}
+                      >
+                        <option value="light">Light (for dark backgrounds)</option>
+                        <option value="dark">Dark (for light backgrounds)</option>
+                      </SelectField>
+                    </>
+                  )}
+                  <Toggle
+                    label="Brand mark / logo"
+                    checked={s.showBrandMark}
+                    onChange={(showBrandMark) => p.onSettings({ showBrandMark })}
+                  />
+                  {s.showBrandMark && (
+                    <div className="brand-mark-panel">
+                      {s.brandMarkDataUrl ? (
+                        <div className="brand-mark-row">
+                          <img src={s.brandMarkDataUrl} alt="" className="brand-mark-preview" />
+                          <span className="brand-mark-label">Logo on canvas</span>
+                          <button type="button" className="text-button" onClick={() => brandMarkRef.current?.click()}>
+                            Replace
+                          </button>
+                          <button type="button" className="text-button danger" onClick={p.onRemoveBrandMark}>
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="secondary-button wide"
+                          onClick={() => brandMarkRef.current?.click()}
+                        >
+                          <ImagePlus size={14} />
+                          Choose a logo
+                        </button>
+                      )}
+                      <SelectField
+                        label="Logo position"
+                        id="brand-mark-position"
+                        value={s.brandMarkPosition}
+                        onChange={(brandMarkPosition) =>
+                          p.onSettings({ brandMarkPosition: brandMarkPosition as Settings["brandMarkPosition"] })
+                        }
+                      >
+                        <option value="bottom-right">Bottom right</option>
+                        <option value="top-right">Top right</option>
+                      </SelectField>
+                      <p className="field-hint">
+                        PNG, JPEG, or WebP up to 2 MB, resized to a small durable data URL on-device.
+                      </p>
+                      <input
+                        ref={brandMarkRef}
+                        type="file"
+                        className="sr-only"
+                        tabIndex={-1}
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-label="Choose brand logo"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) p.onPickBrandMark(file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
                 <div className="preset-io">
                   <button type="button" className="secondary-button" onClick={p.onCopyStyleJson}>
                     <Copy size={13} /> Copy style JSON
@@ -873,6 +972,10 @@ export default function ControlPanel(p: Props) {
               <button className="secondary-button" onClick={() => fileRef.current?.click()}>
                 <Upload size={14} />
                 Open file
+              </button>
+              <button className="secondary-button" onClick={p.onCopyCode} disabled={!hasCode}>
+                <Copy size={14} />
+                Copy code
               </button>
               <button className="icon-button" aria-label="Clear code" title="Clear code" onClick={() => p.onCode("")}>
                 <Eraser size={16} />
@@ -1067,6 +1170,39 @@ export default function ControlPanel(p: Props) {
             </label>
 
             <div className="field">
+              <span className="field-label">Export lines</span>
+              <div className="segmented export-range" role="group" aria-label="Lines to export">
+                {(
+                  [
+                    ["all", "All"],
+                    ["annotated", "Highlighted"],
+                    ["custom", "Custom"],
+                  ] as [ExportRange, string][]
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    className={s.exportRange === id ? "selected" : ""}
+                    aria-pressed={s.exportRange === id}
+                    onClick={() => p.onSettings({ exportRange: id })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {s.exportRange === "annotated" && <p className="field-hint">Exports only highlighted and diff lines.</p>}
+              {s.exportRange === "custom" && (
+                <input
+                  className="export-range-input"
+                  aria-label="Custom export line range"
+                  value={s.exportRangeSpec}
+                  maxLength={120}
+                  placeholder="e.g. 2, 5-7"
+                  onChange={(e) => p.onSettings({ exportRangeSpec: e.target.value })}
+                />
+              )}
+            </div>
+
+            <div className="field">
               <span className="field-label">Format</span>
               <div className="segmented format-options" role="group" aria-label="Export format">
                 {EXPORT_FORMATS.map((format) => (
@@ -1148,6 +1284,10 @@ export default function ControlPanel(p: Props) {
             <button className="secondary-button wide" onClick={p.onCopyLink} disabled={p.exporting || !hasCode}>
               <Link2 size={15} />
               Copy share link
+            </button>
+            <button className="secondary-button wide" onClick={p.onPrint} disabled={p.exporting || !hasCode}>
+              <Printer size={15} />
+              Print / Save as PDF
             </button>
             <p className="panel-hint">
               Rendered privately on your device.
